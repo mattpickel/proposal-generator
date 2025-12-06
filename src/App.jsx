@@ -14,7 +14,8 @@ import {
   FirefliesUpload,
   FileList,
   CommentsInput,
-  ProposalEditor
+  ProposalEditor,
+  DebugPanel
 } from './components';
 
 // Hooks
@@ -184,6 +185,9 @@ function App() {
 
       {/* Toast Notification */}
       <Toast toast={toast} />
+
+      {/* Debug Panel (development only) */}
+      <DebugPanel lastDistillation={proposal.lastDistillation} />
     </div>
   );
 }

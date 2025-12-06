@@ -214,6 +214,30 @@ The app is designed for static hosting:
 - **Cloudflare Pages**: Build command `npm run build`, output directory `dist`
 - **Vercel**: Auto-detects Vite configuration
 
+## Debugging and Logging
+
+The app includes comprehensive debugging features for development:
+
+**Debug Panel (Development Only):**
+- Visible at bottom of screen in dev mode
+- Real-time log viewing with filtering
+- Export logs and distillation data
+- Token usage tracking
+
+**Smart Error Handling:**
+- Rate limit errors (429) use fallback content and continue workflow
+- Authentication errors (401) stop with clear guidance
+- Each step can fail independently without stopping entire workflow
+- Detailed error logging with recovery information
+
+**Logging System:**
+- Structured logs with categories (OpenAI, Workflow, Distillation, etc.)
+- Four levels: DEBUG, INFO, WARN, ERROR
+- Automatic log rotation (keeps last 100 entries)
+- Export to JSON for analysis
+
+**See DEBUGGING.md for detailed usage guide.**
+
 ## Cost Considerations
 
 - Initial generation: ~$0.30-0.40 per proposal

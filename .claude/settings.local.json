@@ -4,7 +4,8 @@
       "Bash(if [ -f package.json ])",
       "Bash(then cat package.json)",
       "Bash(fi)",
-      "Bash(npm run dev:*)"
+      "Bash(npm run dev:*)",
+      "Bash(npm run build:*)"
     ],
     "deny": [],
     "ask": []
