@@ -3,7 +3,7 @@
  */
 
 import { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Header, Toast, ProposalEditor } from '../components';
 import { useToast } from '../hooks/useToast';
 import { useProposalBuilder } from '../hooks/useProposalBuilder';
@@ -12,12 +12,14 @@ import api from '../services/api';
 
 export default function ProposalBuilderPage() {
   const { opportunityId } = useParams();
+  const navigate = useNavigate();
   const { toast, showToast } = useToast();
   const apiKey = import.meta.env.VITE_OPENAI_API_KEY || '';
   const [isLoading, setIsLoading] = useState(true);
 
   // Form state
   const [businessName, setBusinessName] = useState('');
+  const [clientName, setClientName] = useState('');
   const [selectedServices, setSelectedServices] = useState([]);
   const [customPrompt, setCustomPrompt] = useState('');
 
@@ -315,7 +317,15 @@ export default function ProposalBuilderPage() {
       <main className="builder-main">
         <div className="builder-header">
           <h1 className="builder-title">Proposal Builder</h1>
-          <div className="opportunity-badge">{opportunityId}</div>
+          <div className="builder-header-right">
+            <div className="opportunity-badge">{opportunityId}</div>
+            <button
+              className="btn btn-secondary"
+              onClick={() => navigate('/')}
+            >
+              + New Proposal
+            </button>
+          </div>
         </div>
 
         <div className="builder-layout">
@@ -334,6 +344,17 @@ export default function ProposalBuilderPage() {
                   value={businessName}
                   onChange={(e) => setBusinessName(e.target.value)}
                   placeholder="Enter client business name"
+                  className="text-input"
+                />
+              </div>
+
+              <div className="form-field">
+                <label>Client Name</label>
+                <input
+                  type="text"
+                  value={clientName}
+                  onChange={(e) => setClientName(e.target.value)}
+                  placeholder="Enter client contact name"
                   className="text-input"
                 />
               </div>
