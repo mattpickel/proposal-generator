@@ -117,7 +117,7 @@ VITE_SUPABASE_ANON_KEY=eyJhb...
 - **Cons:** Manual work to extract text from PDFs
 - **Use if:** You have only a few examples
 
-**Your choice:** ___________
+**Your choice:** _pdf-parse__________
 
 ---
 
@@ -126,27 +126,36 @@ VITE_SUPABASE_ANON_KEY=eyJhb...
 **Please provide current pricing for each service:**
 
 ### Marketing Machine
-- One-time setup: $___________
-- Description: _________________________________
+- One-time setup: $__4000_________
+- Description: __A complete marketing foundation designed to clarify your brand, de ne your au
+dience, and deliver actionable strategies for growth. Includes messaging devel
+opment, customer pro les, competitive differentiation, a 90-day marketing cal
+endar, and lead generation tools. Perfect for businesses ready to amplify their 
+impact and streamline their marketing efforts_______________________________
 
-### Internal Communications
-- One-time or monthly: $___________
-- Description: _________________________________
-
-### SEO/Hosting/Digital Upgrades
-- One-time: $___________
-- Description: _________________________________
+### Digital Upgrades / Technical Setup Support
+- One-time or monthly: $__3500_________
+- Description: ____SEO templates and recommendations for IT implementation; GoodWorks Setup 
+(Brand-aligned template design, Segmentation planning, Initial 
+automation/journey design (e.g. Welcome Email Series); Audit of Google Business 
 
 ### 828 Marketing
-- Monthly: $___________
-- Description: _________________________________
+- Monthly: $__828/month_________
+- Description: ___A comprehensive monthly content marketing package includes 4 scheduled social 
+posts, 1 written and posted blog, 1 email newsletter, and 2 additional graphics or 
+marketing materials. We will also include 6 yearly story pitches to media and one 
+yearly video session.______________________________
 
 ### Fractional CMO
-- Monthly: $___________
-- Description: _________________________________
+- Monthly: $__2717/month_________
+- Description: __Good Circle Marketing’s Fractional CMO Packages deliver expert strategy and 
+execution to help you scale without the cost of a full-time CMO.
+ Each month includes 10 consultant hours for strategy and 20 coordinator hours 
+for implementation—covering content creation, SEO, email marketing, ads, web
+site optimization, and more._______________________________
 
 ### Other Services
-- Name: ____________ Price: $_______ Type: _______
+- Name: __Good Start Minimal__________ Price: $__4000_____ Type: ___Provides the essential foundation for a professional online presence. It includes foundational brand development, a clear business summary, and messaging that establishes a consistent voice and positioning. Also includes a clean, single-page landing site, seo optimizatin, and domain setup with 1 year of hosting.____
 - Name: ____________ Price: $_______ Type: _______
 
 ---
@@ -156,31 +165,31 @@ VITE_SUPABASE_ANON_KEY=eyJhb...
 **Current system uses Google Drive integration.**
 
 Do you want to:
-- [ ] Keep it (users can select files from Drive)
+- [x ] Keep it (users can select files from Drive)
 - [ ] Remove it (simplify the app)
 - [ ] Keep but make optional
 
-**Your choice:** ___________
+**Your choice:** __keep_________
 
 ---
 
 ## 6. API Keys
 
 **Confirm you still have:**
-- [ ] OpenAI API key (already in .env or will add)
-- [ ] Google API key for Drive (if keeping Google Drive integration)
+- [x ] OpenAI API key (already in .env or will add)
+- [x ] Google API key for Drive (if keeping Google Drive integration)
 
 ---
 
 ## Complete This Checklist
 
-- [ ] **Database:** I chose __________ (Firebase/Supabase/LocalStorage)
-- [ ] **Database credentials:** Added to `.env` file
-- [ ] **Example PDFs:** Placed 3-5 PDFs in `data/example-proposals/`
-- [ ] **PDF library:** I want to use __________ (pdf-parse/pdf.js/manual)
-- [ ] **Service pricing:** Filled out above
-- [ ] **Google Drive:** Keep/Remove/Optional: __________
-- [ ] **OpenAI API key:** Confirmed in `.env`
+- [x ] **Database:** I chose __firebase________ (Firebase/Supabase/LocalStorage)
+- [x ] **Database credentials:** Added to `.env` file
+- [x ] **Example PDFs:** Placed 3-5 PDFs in `data/example-proposals/`
+- [x ] **PDF library:** I want to use _pdf-parse_________ (pdf-parse/pdf.js/manual)
+- [ x] **Service pricing:** Filled out above
+- [ x] **Google Drive:** Keep/Remove/Optional: __keep________
+- [x ] **OpenAI API key:** Confirmed in `.env`
 
 ---
 

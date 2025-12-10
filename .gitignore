@@ -7,9 +7,16 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
+# Dependencies
 node_modules
+frontend/node_modules
+backend/node_modules
+
+# Build outputs
 dist
 dist-ssr
+frontend/dist
+backend/dist
 *.local
 
 # Editor directories and files
@@ -27,3 +34,17 @@ dist-ssr
 .env
 .env.local
 .env.production
+frontend/.env
+frontend/.env.local
+backend/.env
+backend/.env.local
+
+# Firebase service account keys
+backend/service-account-key.json
+service-account-key.json
+*-firebase-adminsdk-*.json
+
+# Old backup files (migration)
+README.old.md
+CLAUDE.old.md
+backup/
