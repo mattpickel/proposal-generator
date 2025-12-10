@@ -13,3 +13,4 @@ export { ProposalEditor } from './ProposalEditor';
 export { ProposalStats } from './ProposalStats';
 export { IterationPanel } from './IterationPanel';
 export { DebugPanel } from './DebugPanel';
+export { VoiceMemoButton } from './VoiceMemoButton';

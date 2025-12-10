@@ -4,7 +4,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Header, Toast, ProposalEditor } from '../components';
+import { Header, Toast, ProposalEditor, VoiceMemoButton } from '../components';
 import { useToast } from '../hooks/useToast';
 import { useProposalBuilder } from '../hooks/useProposalBuilder';
 import { useGoogleDrive } from '../hooks/useGoogleDrive';
@@ -508,13 +508,19 @@ export default function ProposalBuilderPage() {
               <h3 className="card-title">Custom Instructions</h3>
               <p className="card-description">Optional: Add specific requirements or focus areas</p>
 
-              <textarea
-                value={customPrompt}
-                onChange={(e) => setCustomPrompt(e.target.value)}
-                placeholder="e.g., 'Focus on ROI metrics', 'Use casual tone', 'Emphasize quick wins'"
-                className="text-area"
-                rows={4}
-              />
+              <div className="text-input-with-voice">
+                <textarea
+                  value={customPrompt}
+                  onChange={(e) => setCustomPrompt(e.target.value)}
+                  placeholder="e.g., 'Focus on ROI metrics', 'Use casual tone', 'Emphasize quick wins'"
+                  className="text-area"
+                  rows={4}
+                />
+                <VoiceMemoButton
+                  onTranscript={(text) => setCustomPrompt(prev => prev ? `${prev}\n${text}` : text)}
+                  disabled={builder.isProcessing}
+                />
+              </div>
             </div>
 
             {/* Supporting Documents Card */}

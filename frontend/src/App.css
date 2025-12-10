@@ -1565,3 +1565,61 @@ textarea:focus {
   min-height: 50vh;
   gap: 1rem;
 }
+
+/* Voice Memo Button */
+.voice-memo-btn {
+  background: var(--bg);
+  border: 2px solid var(--border);
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  font-size: 1.25rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.voice-memo-btn:hover:not(:disabled) {
+  border-color: var(--primary-light);
+  background: white;
+}
+
+.voice-memo-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.voice-memo-btn.recording {
+  background: #fee2e2;
+  border-color: var(--primary);
+  animation: pulse-recording 1.5s ease-in-out infinite;
+}
+
+.voice-memo-btn.unsupported {
+  opacity: 0.4;
+}
+
+@keyframes pulse-recording {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(235, 55, 42, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(235, 55, 42, 0);
+  }
+}
+
+/* Text input with voice memo layout */
+.text-input-with-voice {
+  display: flex;
+  flex-direction: row;
+  gap: 0.5rem;
+  width: 100%;
+  align-items: flex-start;
+}
+
+.text-input-with-voice textarea {
+  flex: 1;
+  min-width: 0;
+}
