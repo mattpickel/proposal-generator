@@ -520,8 +520,10 @@ textarea:focus {
 }
 
 .proposal-content ul {
-  margin-left: 1.5rem;
+  margin-left: 0;
+  padding-left: 2.5rem;
   margin-bottom: 1rem;
+  list-style-position: outside;
 }
 
 .proposal-content li {
@@ -692,14 +694,51 @@ textarea:focus {
   letter-spacing: 0.05em;
 }
 
-/* Responsive */
+/* Responsive - Legacy Layout */
 @media (max-width: 1024px) {
   .main-content {
     grid-template-columns: 1fr;
+    padding: 1rem;
+    gap: 1.5rem;
   }
 
   .input-panel {
     position: static;
+  }
+
+  .header {
+    padding: 1rem 1.5rem;
+  }
+
+  .header-content {
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    padding: 1rem;
+  }
+
+  .header {
+    padding: 1rem;
+  }
+
+  .logo {
+    font-size: 1.25rem;
+  }
+
+  .api-key-input {
+    width: 150px;
+  }
+
+  .output-body {
+    padding: 1.5rem;
+  }
+
+  .card-body {
+    padding: 1rem;
   }
 }
 
@@ -883,10 +922,10 @@ textarea:focus {
   overflow-y: auto;
   overflow-x: hidden;
   padding-right: 0.5rem;
-  width: 420px;
-  min-width: 420px;
+  width: 380px;
+  min-width: 320px;
   max-width: 420px;
-  flex-shrink: 0;
+  flex-shrink: 1;
 }
 
 .builder-sidebar::-webkit-scrollbar {
@@ -1182,10 +1221,10 @@ textarea:focus {
 /* Content Area - Generated Proposal */
 .builder-content {
   min-height: 600px;
-  width: 1084px;
-  min-width: 1084px;
+  width: 100%;
   max-width: 1084px;
-  flex-shrink: 0;
+  min-width: 600px;
+  flex: 1;
   overflow: hidden;
 }
 
@@ -1221,20 +1260,104 @@ textarea:focus {
 }
 
 /* Responsive */
+@media (max-width: 1400px) {
+  .builder-main {
+    padding: 1.5rem;
+  }
+
+  .builder-sidebar {
+    width: 340px;
+    min-width: 300px;
+  }
+
+  .builder-content {
+    min-width: 500px;
+  }
+}
+
 @media (max-width: 1200px) {
   .builder-layout {
-    grid-template-columns: 380px 1fr;
+    gap: 1.5rem;
+  }
+
+  .builder-sidebar {
+    width: 320px;
+    min-width: 280px;
+  }
+
+  .builder-content {
+    min-width: 450px;
   }
 }
 
 @media (max-width: 1024px) {
+  .builder-main {
+    padding: 1rem;
+  }
+
   .builder-layout {
-    grid-template-columns: 1fr;
+    flex-direction: column;
   }
 
   .builder-sidebar {
     position: static;
     max-height: none;
+    width: 100%;
+    max-width: 100%;
+    min-width: 100%;
+  }
+
+  .builder-content {
+    width: 100%;
+    max-width: 100%;
+    min-width: 100%;
+  }
+
+  .builder-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .builder-header-right {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .builder-title {
+    font-size: 1.5rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .builder-main {
+    padding: 0.75rem;
+  }
+
+  .builder-header {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+  }
+
+  .builder-title {
+    font-size: 1.25rem;
+  }
+
+  .opportunity-badge {
+    padding: 0.375rem 1rem;
+    font-size: 0.8rem;
+  }
+
+  .builder-card {
+    padding: 1.25rem;
+  }
+
+  .card-icon {
+    font-size: 1.5rem;
+  }
+
+  .output-body {
+    padding: 1.5rem;
   }
 }
 
