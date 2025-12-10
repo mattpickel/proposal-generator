@@ -11,7 +11,8 @@
       "Bash(npm run kill-ports:*)",
       "Bash(git add:*)",
       "Bash(git log:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(git push:*)"
     ],
     "deny": [],
     "ask": []

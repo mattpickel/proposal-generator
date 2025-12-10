@@ -10,6 +10,7 @@ import {
   reviseSection,
   generateUnifiedProposal
 } from '../services/proposalGenerator.js';
+import { iterateProposal } from '../services/openai.js';
 
 const router = express.Router();
 
@@ -80,6 +81,22 @@ router.post('/unified', async (req, res, next) => {
 
     const result = await generateUnifiedProposal(apiKey, proposalInstanceId, proposalMetadata);
     res.json(result);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Iterate on existing proposal with feedback
+router.post('/iterate', async (req, res, next) => {
+  try {
+    const { apiKey, currentProposal, feedback } = req.body;
+
+    if (!apiKey || !currentProposal || !feedback) {
+      return res.status(400).json({ error: 'Missing required parameters: apiKey, currentProposal, feedback' });
+    }
+
+    const revisedProposal = await iterateProposal(apiKey, currentProposal, feedback);
+    res.json({ proposal: revisedProposal });
   } catch (error) {
     next(error);
   }

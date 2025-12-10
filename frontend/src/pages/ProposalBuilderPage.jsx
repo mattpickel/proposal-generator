@@ -684,8 +684,18 @@ export default function ProposalBuilderPage() {
                   wordCount={fullProposalText.split(/\s+/).length}
                   isGenerating={builder.isProcessing}
                   onIterate={async (feedback) => {
-                    // Handle iteration
-                    showToast('Iteration feature coming soon!', 'info');
+                    try {
+                      showToast('Updating proposal...', 'info');
+                      const result = await api.generation.iterateProposal(apiKey, fullProposalText, feedback);
+                      if (result.proposal) {
+                        setFullProposalText(result.proposal);
+                        showToast('Proposal updated successfully!', 'success');
+                        return true;
+                      }
+                    } catch (error) {
+                      showToast(`Failed to update proposal: ${error.message}`, 'error');
+                    }
+                    return false;
                   }}
                 />
               </>

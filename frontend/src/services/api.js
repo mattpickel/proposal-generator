@@ -152,6 +152,13 @@ class APIClient {
         method: 'POST',
         body: { apiKey, proposalInstanceId, proposalMetadata },
       }),
+
+    // Iterate on existing proposal with feedback
+    iterateProposal: (apiKey, currentProposal, feedback) =>
+      this.request('/generation/iterate', {
+        method: 'POST',
+        body: { apiKey, currentProposal, feedback },
+      }),
   };
 }
 
