@@ -24,7 +24,11 @@ export function useProposalBuilder(apiKey, showToast) {
       showToast('Analyzing transcript...', 'success');
 
       const text = await readFileAsText(transcriptFile);
+      console.log('ProposalBuilder - Transcript text length:', text.length);
+      console.log('ProposalBuilder - Transcript preview:', text.substring(0, 500));
+
       const brief = await api.extraction.extractClientBrief(apiKey, text);
+      console.log('ProposalBuilder - Extracted brief:', brief);
 
       // Save to database
       const savedBrief = await api.database.clientBriefs.create(brief);

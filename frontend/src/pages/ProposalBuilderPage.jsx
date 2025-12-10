@@ -25,8 +25,10 @@ export default function ProposalBuilderPage() {
 
   // File state
   const [transcriptFile, setTranscriptFile] = useState(null);
+  const [isAnalyzingTranscript, setIsAnalyzingTranscript] = useState(false);
   const [supportingDocs, setSupportingDocs] = useState([]);
   const [processedDocs, setProcessedDocs] = useState([]); // { file, summary, status }
+  const [isAnalyzingSupportingDocs, setIsAnalyzingSupportingDocs] = useState(false);
 
   // Generated proposal (unified format)
   const [generatedSections, setGeneratedSections] = useState([]); // Legacy support
@@ -115,44 +117,69 @@ export default function ProposalBuilderPage() {
     }
   }, [builder.suggestedServices]);
 
-  const handleTranscriptUpload = async (e) => {
+  const handleTranscriptUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     setTranscriptFile(file);
+  };
 
+  const handleAnalyzeTranscript = async () => {
+    if (!transcriptFile) return;
+
+    setIsAnalyzingTranscript(true);
     try {
-      await builder.processTranscript(file);
+      await builder.processTranscript(transcriptFile);
     } catch (error) {
       console.error('Failed to process transcript:', error);
+    } finally {
+      setIsAnalyzingTranscript(false);
     }
   };
 
-  const handleSupportingDocUpload = async (e) => {
+  const handleSupportingDocUpload = (e) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
-
     setSupportingDocs(prev => [...prev, ...files]);
+  };
 
-    // If we have a proposal instance, process the documents immediately
-    if (builder.currentProposal?.id) {
-      for (const file of files) {
-        try {
-          setProcessedDocs(prev => [...prev, { file, status: 'processing', summary: null }]);
-          const doc = await builder.processSupportingDocument(file, builder.currentProposal.id);
+  const handleAnalyzeSupportingDocs = async () => {
+    if (supportingDocs.length === 0) return;
 
-          // Update with summary
+    // Filter out already processed docs
+    const unprocessedDocs = supportingDocs.filter(
+      file => !processedDocs.find(d => d.file === file && d.status === 'complete')
+    );
+
+    if (unprocessedDocs.length === 0) {
+      showToast('All documents already analyzed', 'info');
+      return;
+    }
+
+    setIsAnalyzingSupportingDocs(true);
+    try {
+      for (const file of unprocessedDocs) {
+        setProcessedDocs(prev => [...prev.filter(d => d.file !== file), { file, status: 'processing', summary: null }]);
+
+        if (builder.currentProposal?.id) {
+          try {
+            const doc = await builder.processSupportingDocument(file, builder.currentProposal.id);
+            setProcessedDocs(prev => prev.map(d =>
+              d.file === file ? { ...d, status: 'complete', summary: doc.processedSummary } : d
+            ));
+          } catch (error) {
+            setProcessedDocs(prev => prev.map(d =>
+              d.file === file ? { ...d, status: 'error' } : d
+            ));
+          }
+        } else {
+          // Mark as pending if no proposal yet
           setProcessedDocs(prev => prev.map(d =>
-            d.file === file ? { ...d, status: 'complete', summary: doc.processedSummary } : d
-          ));
-        } catch (error) {
-          setProcessedDocs(prev => prev.map(d =>
-            d.file === file ? { ...d, status: 'error' } : d
+            d.file === file ? { ...d, status: 'pending', summary: 'Will process after creating proposal' } : d
           ));
         }
       }
-    } else {
-      showToast(`Added ${files.length} document(s) - will process after creating proposal`, 'success');
+    } finally {
+      setIsAnalyzingSupportingDocs(false);
     }
   };
 
@@ -166,12 +193,9 @@ export default function ProposalBuilderPage() {
       await googleDrive.pickFiles('Select transcript from Drive', async (files) => {
         if (files.length > 0) {
           const file = files[0];
-          // Create a File object from the content
           const blob = new Blob([file.content], { type: 'text/plain' });
           const fileObj = new File([blob], file.name, { type: 'text/plain' });
-
           setTranscriptFile(fileObj);
-          await builder.processTranscript(fileObj);
         }
       });
     } catch (error) {
@@ -188,26 +212,7 @@ export default function ProposalBuilderPage() {
           const blob = new Blob([f.content], { type: 'text/plain' });
           return new File([blob], f.name, { type: 'text/plain' });
         });
-
         setSupportingDocs(prev => [...prev, ...fileObjects]);
-
-        // Process if we have a proposal
-        if (builder.currentProposal?.id) {
-          for (const file of fileObjects) {
-            try {
-              setProcessedDocs(prev => [...prev, { file, status: 'processing', summary: null }]);
-              const doc = await builder.processSupportingDocument(file, builder.currentProposal.id);
-
-              setProcessedDocs(prev => prev.map(d =>
-                d.file === file ? { ...d, status: 'complete', summary: doc.processedSummary } : d
-              ));
-            } catch (error) {
-              setProcessedDocs(prev => prev.map(d =>
-                d.file === file ? { ...d, status: 'error' } : d
-              ));
-            }
-          }
-        }
       });
     } catch (error) {
       console.error('Failed to load documents from Drive:', error);
@@ -409,6 +414,26 @@ export default function ProposalBuilderPage() {
                     </>
                   )}
                 </div>
+
+                {/* Analyze Button */}
+                {transcriptFile && (
+                  <div style={{ marginTop: '1rem' }}>
+                    {isAnalyzingTranscript ? (
+                      <div className="analyze-loading">
+                        <div className="spinner-small"></div>
+                        <span>Analyzing transcript...</span>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={handleAnalyzeTranscript}
+                        className="btn btn-primary btn-sm"
+                        style={{ width: '100%' }}
+                      >
+                        {builder.clientBrief ? 'Re-analyze Transcript' : 'Analyze Transcript'}
+                      </button>
+                    )}
+                  </div>
+                )}
               </div>
 
               {builder.clientBrief && (
@@ -527,43 +552,94 @@ export default function ProposalBuilderPage() {
               </div>
 
               {supportingDocs.length > 0 && (
-                <div className="file-list">
-                  {supportingDocs.map((file, index) => {
-                    const processed = processedDocs.find(d => d.file === file);
-                    return (
-                      <div key={index} className="file-item" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
-                          <span className="file-name">
-                            📄 {file.name}
-                            {processed?.status === 'processing' && ' ⏳'}
-                            {processed?.status === 'complete' && ' ✓'}
-                            {processed?.status === 'error' && ' ❌'}
-                          </span>
-                          <button
-                            className="remove-btn"
-                            onClick={() => removeSupportingDoc(index)}
-                          >
-                            ×
-                          </button>
-                        </div>
-                        {processed?.summary && (
-                          <div style={{
-                            marginTop: '0.5rem',
-                            fontSize: '0.85rem',
-                            color: '#64748b',
-                            lineHeight: '1.4',
-                            paddingLeft: '1.5rem'
-                          }}>
-                            {typeof processed.summary === 'string'
-                              ? processed.summary.substring(0, 150) + (processed.summary.length > 150 ? '...' : '')
-                              : JSON.stringify(processed.summary).substring(0, 150) + '...'
-                            }
+                <>
+                  <div className="file-list">
+                    {supportingDocs.map((file, index) => {
+                      const processed = processedDocs.find(d => d.file === file);
+                      // Parse summary if it's a JSON string
+                      let summaryData = null;
+                      if (processed?.summary) {
+                        try {
+                          summaryData = typeof processed.summary === 'string'
+                            ? JSON.parse(processed.summary)
+                            : processed.summary;
+                        } catch {
+                          summaryData = { keyPoints: [processed.summary] };
+                        }
+                      }
+                      return (
+                        <div key={index} className="file-item" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center', gap: '0.5rem' }}>
+                            <span className="file-name" style={{
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap',
+                              minWidth: 0,
+                              flex: 1
+                            }}>
+                              📄 {file.name}
+                              {processed?.status === 'processing' && ' ⏳'}
+                              {processed?.status === 'complete' && ' ✓'}
+                              {processed?.status === 'pending' && ' ⏸'}
+                              {processed?.status === 'error' && ' ❌'}
+                            </span>
+                            <button
+                              className="remove-btn"
+                              onClick={() => removeSupportingDoc(index)}
+                              style={{ flexShrink: 0 }}
+                            >
+                              ×
+                            </button>
                           </div>
-                        )}
+                          {summaryData && (
+                            <div style={{
+                              marginTop: '0.5rem',
+                              fontSize: '0.85rem',
+                              color: '#64748b',
+                              lineHeight: '1.4',
+                              paddingLeft: '1.5rem',
+                              width: '100%'
+                            }}>
+                              {summaryData.keyPoints && summaryData.keyPoints.length > 0 && (
+                                <ul style={{ margin: 0, paddingLeft: '1rem' }}>
+                                  {summaryData.keyPoints.slice(0, 3).map((point, i) => (
+                                    <li key={i} style={{ marginBottom: '0.25rem' }}>{point}</li>
+                                  ))}
+                                </ul>
+                              )}
+                              {summaryData.uniqueValue && (
+                                <div style={{ marginTop: '0.25rem', fontStyle: 'italic' }}>
+                                  {summaryData.uniqueValue}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Analyze Button */}
+                  <div style={{ marginTop: '1rem' }}>
+                    {isAnalyzingSupportingDocs ? (
+                      <div className="analyze-loading">
+                        <div className="spinner-small"></div>
+                        <span>Analyzing documents...</span>
                       </div>
-                    );
-                  })}
-                </div>
+                    ) : (
+                      <button
+                        onClick={handleAnalyzeSupportingDocs}
+                        className="btn btn-primary btn-sm"
+                        style={{ width: '100%' }}
+                        disabled={supportingDocs.every(file =>
+                          processedDocs.find(d => d.file === file && d.status === 'complete')
+                        )}
+                      >
+                        Analyze Documents
+                      </button>
+                    )}
+                  </div>
+                </>
               )}
             </div>
 
