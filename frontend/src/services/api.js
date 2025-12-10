@@ -145,6 +145,13 @@ class APIClient {
         method: 'POST',
         body: { apiKey, sectionInstanceId, comment },
       }),
+
+    // New unified proposal generation
+    generateUnified: (apiKey, proposalInstanceId, proposalMetadata = {}) =>
+      this.request('/generation/unified', {
+        method: 'POST',
+        body: { apiKey, proposalInstanceId, proposalMetadata },
+      }),
   };
 }
 

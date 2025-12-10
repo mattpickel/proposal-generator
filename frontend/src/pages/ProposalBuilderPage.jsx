@@ -23,10 +23,12 @@ export default function ProposalBuilderPage() {
   // File state
   const [transcriptFile, setTranscriptFile] = useState(null);
   const [supportingDocs, setSupportingDocs] = useState([]);
+  const [processedDocs, setProcessedDocs] = useState([]); // { file, summary, status }
 
-  // Generated sections
-  const [generatedSections, setGeneratedSections] = useState([]);
+  // Generated proposal (unified format)
+  const [generatedSections, setGeneratedSections] = useState([]); // Legacy support
   const [fullProposalText, setFullProposalText] = useState('');
+  const [serviceDescriptions, setServiceDescriptions] = useState([]);
 
   const builder = useProposalBuilder(apiKey, showToast);
 
@@ -52,17 +54,32 @@ export default function ProposalBuilderPage() {
           setBusinessName(existing.proposalName?.split(' - ')[1]?.replace(' Marketing Proposal', '') || '');
           setSelectedServices(existing.serviceIds || []);
 
+          // Load service descriptions from proposal instance
+          if (existing.serviceDescriptions && existing.serviceDescriptions.length > 0) {
+            setServiceDescriptions(existing.serviceDescriptions);
+          }
+
           // Load generated sections
           const sections = await api.database.sections.getByProposalId(existing.id);
           setGeneratedSections(sections || []);
 
-          // Combine sections into full text
+          // Handle unified format vs legacy sections
           if (sections && sections.length > 0) {
-            const combined = sections
-              .sort((a, b) => a.sectionId.localeCompare(b.sectionId))
-              .map(s => s.content)
-              .join('\n\n---\n\n');
-            setFullProposalText(combined);
+            // Check if this is a unified proposal (single section with sectionId 'unified_proposal')
+            const unifiedSection = sections.find(s => s.sectionId === 'unified_proposal');
+
+            if (unifiedSection) {
+              // New unified format
+              setFullProposalText(unifiedSection.content);
+              // Service descriptions already loaded from proposal instance above
+            } else {
+              // Legacy format - combine multiple sections
+              const combined = sections
+                .sort((a, b) => a.sectionId.localeCompare(b.sectionId))
+                .map(s => s.content)
+                .join('\n\n---\n\n');
+              setFullProposalText(combined);
+            }
           }
 
           showToast('Proposal loaded', 'success');
@@ -112,7 +129,27 @@ export default function ProposalBuilderPage() {
     if (files.length === 0) return;
 
     setSupportingDocs(prev => [...prev, ...files]);
-    showToast(`Added ${files.length} supporting document(s)`, 'success');
+
+    // If we have a proposal instance, process the documents immediately
+    if (builder.currentProposal?.id) {
+      for (const file of files) {
+        try {
+          setProcessedDocs(prev => [...prev, { file, status: 'processing', summary: null }]);
+          const doc = await builder.processSupportingDocument(file, builder.currentProposal.id);
+
+          // Update with summary
+          setProcessedDocs(prev => prev.map(d =>
+            d.file === file ? { ...d, status: 'complete', summary: doc.processedSummary } : d
+          ));
+        } catch (error) {
+          setProcessedDocs(prev => prev.map(d =>
+            d.file === file ? { ...d, status: 'error' } : d
+          ));
+        }
+      }
+    } else {
+      showToast(`Added ${files.length} document(s) - will process after creating proposal`, 'success');
+    }
   };
 
   const removeSupportingDoc = (index) => {
@@ -148,13 +185,24 @@ export default function ProposalBuilderPage() {
         proposalId = proposal.id;
       }
 
-      // Generate all sections
-      const sections = await builder.generateProposal(proposalId);
-      setGeneratedSections(sections || []);
+      // Build proposal metadata from custom prompt if provided
+      const proposalMetadata = customPrompt ? {
+        highLevelObjective: customPrompt
+      } : {};
 
-      // Combine sections into full text
-      if (sections && sections.length > 0) {
-        const combined = sections
+      // Generate unified proposal
+      const result = await builder.generateProposal(proposalId, proposalMetadata);
+
+      // Handle new unified format
+      if (result.proposalBody) {
+        setFullProposalText(result.proposalBody);
+        setServiceDescriptions(result.serviceDescriptions || []);
+        // Clear legacy sections
+        setGeneratedSections([]);
+      } else if (result && Array.isArray(result)) {
+        // Legacy format (array of sections) - for backwards compatibility
+        setGeneratedSections(result);
+        const combined = result
           .sort((a, b) => a.sectionId.localeCompare(b.sectionId))
           .map(s => s.content)
           .join('\n\n---\n\n');
@@ -237,9 +285,39 @@ export default function ProposalBuilderPage() {
               </div>
 
               {builder.clientBrief && (
-                <div className="info-box success">
-                  <strong>✓ Brief Extracted</strong>
-                  <p>{builder.clientBrief.clientName} • {builder.clientBrief.industry}</p>
+                <div style={{ marginTop: '1rem' }}>
+                  <div className="info-box success">
+                    <strong>✓ Brief Extracted</strong>
+                    <div style={{ fontSize: '0.95rem', marginTop: '0.5rem' }}>
+                      <div><strong>{builder.clientBrief.clientName}</strong></div>
+                      {builder.clientBrief.industry && <div>{builder.clientBrief.industry}</div>}
+                      {builder.clientBrief.location && <div>📍 {builder.clientBrief.location}</div>}
+                    </div>
+                  </div>
+
+                  {/* Goals */}
+                  {builder.clientBrief.goals && builder.clientBrief.goals.length > 0 && (
+                    <div style={{ marginTop: '0.75rem', fontSize: '0.9rem' }}>
+                      <div style={{ fontWeight: 600, marginBottom: '0.25rem', color: '#0f172a' }}>Goals:</div>
+                      <ul style={{ margin: 0, paddingLeft: '1.25rem', color: '#475569' }}>
+                        {builder.clientBrief.goals.slice(0, 3).map((goal, i) => (
+                          <li key={i} style={{ marginBottom: '0.25rem' }}>{goal}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {/* Pain Points */}
+                  {builder.clientBrief.painPoints && builder.clientBrief.painPoints.length > 0 && (
+                    <div style={{ marginTop: '0.75rem', fontSize: '0.9rem' }}>
+                      <div style={{ fontWeight: 600, marginBottom: '0.25rem', color: '#0f172a' }}>Challenges:</div>
+                      <ul style={{ margin: 0, paddingLeft: '1.25rem', color: '#475569' }}>
+                        {builder.clientBrief.painPoints.slice(0, 3).map((pain, i) => (
+                          <li key={i} style={{ marginBottom: '0.25rem' }}>{pain}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -326,17 +404,41 @@ export default function ProposalBuilderPage() {
 
               {supportingDocs.length > 0 && (
                 <div className="file-list">
-                  {supportingDocs.map((file, index) => (
-                    <div key={index} className="file-item">
-                      <span className="file-name">📄 {file.name}</span>
-                      <button
-                        className="remove-btn"
-                        onClick={() => removeSupportingDoc(index)}
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
+                  {supportingDocs.map((file, index) => {
+                    const processed = processedDocs.find(d => d.file === file);
+                    return (
+                      <div key={index} className="file-item" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                          <span className="file-name">
+                            📄 {file.name}
+                            {processed?.status === 'processing' && ' ⏳'}
+                            {processed?.status === 'complete' && ' ✓'}
+                            {processed?.status === 'error' && ' ❌'}
+                          </span>
+                          <button
+                            className="remove-btn"
+                            onClick={() => removeSupportingDoc(index)}
+                          >
+                            ×
+                          </button>
+                        </div>
+                        {processed?.summary && (
+                          <div style={{
+                            marginTop: '0.5rem',
+                            fontSize: '0.85rem',
+                            color: '#64748b',
+                            lineHeight: '1.4',
+                            paddingLeft: '1.5rem'
+                          }}>
+                            {typeof processed.summary === 'string'
+                              ? processed.summary.substring(0, 150) + (processed.summary.length > 150 ? '...' : '')
+                              : JSON.stringify(processed.summary).substring(0, 150) + '...'
+                            }
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </div>
@@ -368,17 +470,19 @@ export default function ProposalBuilderPage() {
 
           {/* Right Column - Generated Proposal */}
           <div className="builder-content">
-            {generatedSections.length > 0 ? (
-              <ProposalEditor
-                proposalText={fullProposalText}
-                onProposalChange={setFullProposalText}
-                wordCount={fullProposalText.split(/\s+/).length}
-                isGenerating={builder.isProcessing}
-                onIterate={async (feedback) => {
-                  // Handle iteration
-                  showToast('Iteration feature coming soon!', 'info');
-                }}
-              />
+            {fullProposalText ? (
+              <>
+                <ProposalEditor
+                  proposalText={fullProposalText}
+                  onProposalChange={setFullProposalText}
+                  wordCount={fullProposalText.split(/\s+/).length}
+                  isGenerating={builder.isProcessing}
+                  onIterate={async (feedback) => {
+                    // Handle iteration
+                    showToast('Iteration feature coming soon!', 'info');
+                  }}
+                />
+              </>
             ) : (
               <div className="empty-proposal">
                 <div className="empty-icon">📄</div>

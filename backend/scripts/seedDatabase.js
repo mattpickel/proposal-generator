@@ -13,6 +13,7 @@ import * as dotenv from 'dotenv';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { serviceContentTemplates } from '../src/data/serviceContentTemplates.js';
 
 // Get current directory
 const __filename = fileURLToPath(import.meta.url);
@@ -214,11 +215,15 @@ async function seedDatabase() {
     await db.collection(COLLECTIONS.STYLE_CARDS).doc(houseStyleCard.id).set(houseStyleCard);
     console.log('   ✓ Style card created');
 
-    // Seed service modules
+    // Seed service modules (with content templates)
     console.log('📦 Seeding service modules...');
     for (const service of serviceModules) {
+      // Merge with content template if available
+      const contentTemplate = serviceContentTemplates[service.id] || {};
+
       await db.collection(COLLECTIONS.SERVICE_MODULES).doc(service.id).set({
         ...service,
+        contentTemplate, // Add the detailed content template
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       });

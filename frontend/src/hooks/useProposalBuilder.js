@@ -123,27 +123,30 @@ export function useProposalBuilder(apiKey, showToast) {
   };
 
   /**
-   * Generate all sections
+   * Generate proposal using unified single-pass approach
+   * @param {string} proposalInstanceId - The proposal instance ID
+   * @param {object} proposalMetadata - Optional metadata (title, timeline, investmentSummary, nextSteps)
    */
-  const generateProposal = async (proposalInstanceId) => {
+  const generateProposal = async (proposalInstanceId, proposalMetadata = {}) => {
     setIsProcessing(true);
-    setGenerationProgress({ current: 0, total: 9 });
+    setGenerationProgress({ current: 1, total: 1, status: 'Generating proposal...' });
 
     try {
-      showToast('Starting proposal generation...', 'success');
+      showToast('Generating proposal...', 'success');
 
-      // Note: Progress callbacks are not yet supported via API
-      // You may want to implement Server-Sent Events (SSE) or WebSockets for progress updates
-      const sections = await api.generation.generateAllSections(apiKey, proposalInstanceId);
+      // Use new unified generation
+      const result = await api.generation.generateUnified(apiKey, proposalInstanceId, proposalMetadata);
 
       setGenerationProgress(null);
       showToast('✅ Proposal generated successfully!', 'success');
-      console.log('ProposalBuilder - Proposal fully generated', {
+      console.log('ProposalBuilder - Unified proposal generated', {
         proposalInstanceId,
-        sectionsCount: sections.length
+        proposalBodyLength: result.proposalBody?.length,
+        servicesCount: result.serviceDescriptions?.length,
+        tokens: result.tokens
       });
 
-      return sections;
+      return result;
     } catch (error) {
       setGenerationProgress(null);
       showToast(`❌ Generation failed: ${error.message}`, 'error');

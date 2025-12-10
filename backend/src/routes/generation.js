@@ -7,7 +7,8 @@ import express from 'express';
 import {
   generateSection,
   generateAllSections,
-  reviseSection
+  reviseSection,
+  generateUnifiedProposal
 } from '../services/proposalGenerator.js';
 
 const router = express.Router();
@@ -63,6 +64,22 @@ router.post('/revise', async (req, res, next) => {
 
     const revised = await reviseSection(apiKey, sectionInstanceId, comment);
     res.json(revised);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Generate unified proposal (new single-pass approach)
+router.post('/unified', async (req, res, next) => {
+  try {
+    const { apiKey, proposalInstanceId, proposalMetadata } = req.body;
+
+    if (!apiKey || !proposalInstanceId) {
+      return res.status(400).json({ error: 'Missing apiKey or proposalInstanceId' });
+    }
+
+    const result = await generateUnifiedProposal(apiKey, proposalInstanceId, proposalMetadata);
+    res.json(result);
   } catch (error) {
     next(error);
   }
