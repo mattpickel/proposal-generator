@@ -474,12 +474,16 @@ textarea:focus {
   padding: 2rem;
   max-height: calc(100vh - 300px);
   overflow-y: auto;
+  width: 100%; /* Maintain full width */
+  min-width: 0; /* Prevent shrinking */
 }
 
 .proposal-content {
   font-size: 1rem;
   line-height: 1.8;
   color: var(--text);
+  width: 100%; /* Maintain full width */
+  min-width: 0; /* Prevent shrinking */
 }
 
 .proposal-content h1 {
@@ -830,6 +834,7 @@ textarea:focus {
   grid-template-columns: 420px 1fr;
   gap: 2rem;
   align-items: start;
+  min-width: 0; /* Prevent overflow */
 }
 
 /* Sidebar - Configuration Cards */
@@ -841,7 +846,10 @@ textarea:focus {
   top: 100px;
   max-height: calc(100vh - 120px);
   overflow-y: auto;
+  overflow-x: hidden; /* Prevent horizontal overflow */
   padding-right: 0.5rem;
+  width: 420px; /* Fixed width to prevent shrinking */
+  min-width: 420px; /* Prevent shrinking */
 }
 
 .builder-sidebar::-webkit-scrollbar {
@@ -962,6 +970,10 @@ textarea:focus {
   transition: all 0.2s;
   font-weight: 500;
   color: var(--text);
+  /* Fix filename overflow */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .upload-button:hover {
@@ -1133,6 +1145,8 @@ textarea:focus {
 /* Content Area - Generated Proposal */
 .builder-content {
   min-height: 600px;
+  width: 100%; /* Maintain full width */
+  min-width: 0; /* Prevent shrinking */
 }
 
 .empty-proposal {

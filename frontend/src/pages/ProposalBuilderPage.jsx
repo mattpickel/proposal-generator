@@ -7,6 +7,7 @@ import { useParams } from 'react-router-dom';
 import { Header, Toast, ProposalEditor } from '../components';
 import { useToast } from '../hooks/useToast';
 import { useProposalBuilder } from '../hooks/useProposalBuilder';
+import { useGoogleDrive } from '../hooks/useGoogleDrive';
 import api from '../services/api';
 
 export default function ProposalBuilderPage() {
@@ -31,6 +32,7 @@ export default function ProposalBuilderPage() {
   const [serviceDescriptions, setServiceDescriptions] = useState([]);
 
   const builder = useProposalBuilder(apiKey, showToast);
+  const googleDrive = useGoogleDrive();
 
   const serviceOptions = [
     { id: 'marketing_machine', label: 'Marketing Machine', price: '$7,500' },
@@ -156,6 +158,61 @@ export default function ProposalBuilderPage() {
     setSupportingDocs(prev => prev.filter((_, i) => i !== index));
   };
 
+  // Google Drive: Handle transcript from Drive
+  const handleTranscriptFromDrive = async () => {
+    try {
+      await googleDrive.pickFiles('Select transcript from Drive', async (files) => {
+        if (files.length > 0) {
+          const file = files[0];
+          // Create a File object from the content
+          const blob = new Blob([file.content], { type: 'text/plain' });
+          const fileObj = new File([blob], file.name, { type: 'text/plain' });
+
+          setTranscriptFile(fileObj);
+          await builder.processTranscript(fileObj);
+        }
+      });
+    } catch (error) {
+      console.error('Failed to load transcript from Drive:', error);
+      showToast('Failed to load transcript from Drive', 'error');
+    }
+  };
+
+  // Google Drive: Handle supporting docs from Drive
+  const handleSupportingDocsFromDrive = async () => {
+    try {
+      await googleDrive.pickFiles('Select supporting documents from Drive', async (files) => {
+        const fileObjects = files.map(f => {
+          const blob = new Blob([f.content], { type: 'text/plain' });
+          return new File([blob], f.name, { type: 'text/plain' });
+        });
+
+        setSupportingDocs(prev => [...prev, ...fileObjects]);
+
+        // Process if we have a proposal
+        if (builder.currentProposal?.id) {
+          for (const file of fileObjects) {
+            try {
+              setProcessedDocs(prev => [...prev, { file, status: 'processing', summary: null }]);
+              const doc = await builder.processSupportingDocument(file, builder.currentProposal.id);
+
+              setProcessedDocs(prev => prev.map(d =>
+                d.file === file ? { ...d, status: 'complete', summary: doc.processedSummary } : d
+              ));
+            } catch (error) {
+              setProcessedDocs(prev => prev.map(d =>
+                d.file === file ? { ...d, status: 'error' } : d
+              ));
+            }
+          }
+        }
+      });
+    } catch (error) {
+      console.error('Failed to load documents from Drive:', error);
+      showToast('Failed to load documents from Drive', 'error');
+    }
+  };
+
   const toggleService = (serviceId) => {
     setSelectedServices(prev =>
       prev.includes(serviceId)
@@ -265,6 +322,23 @@ export default function ProposalBuilderPage() {
           {/* Left Column - Configuration */}
           <div className="builder-sidebar">
 
+            {/* Client Info Card */}
+            <div className="builder-card">
+              <div className="card-icon">🏢</div>
+              <h3 className="card-title">Client Information</h3>
+
+              <div className="form-field">
+                <label>Business Name</label>
+                <input
+                  type="text"
+                  value={businessName}
+                  onChange={(e) => setBusinessName(e.target.value)}
+                  placeholder="Enter client business name"
+                  className="text-input"
+                />
+              </div>
+            </div>
+
             {/* Transcript Upload Card */}
             <div className="builder-card">
               <div className="card-icon">📝</div>
@@ -282,6 +356,38 @@ export default function ProposalBuilderPage() {
                 <label htmlFor="transcript-upload" className="upload-button">
                   {transcriptFile ? `✓ ${transcriptFile.name}` : '+ Upload Transcript'}
                 </label>
+
+                {/* Google Drive Integration */}
+                <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                  {!googleDrive.isSignedIn ? (
+                    <button
+                      onClick={googleDrive.signIn}
+                      className="btn btn-secondary btn-sm"
+                      style={{ width: '100%' }}
+                    >
+                      <span style={{ marginRight: '0.5rem' }}>📁</span>
+                      Sign in to Google Drive
+                    </button>
+                  ) : (
+                    <>
+                      <button
+                        onClick={handleTranscriptFromDrive}
+                        className="btn btn-secondary btn-sm"
+                        style={{ width: '100%' }}
+                      >
+                        <span style={{ marginRight: '0.5rem' }}>📁</span>
+                        Select from Google Drive
+                      </button>
+                      <button
+                        onClick={googleDrive.signOut}
+                        className="btn btn-secondary btn-sm"
+                        style={{ width: '100%', fontSize: '0.8rem', padding: '0.5rem' }}
+                      >
+                        Sign out
+                      </button>
+                    </>
+                  )}
+                </div>
               </div>
 
               {builder.clientBrief && (
@@ -320,23 +426,6 @@ export default function ProposalBuilderPage() {
                   )}
                 </div>
               )}
-            </div>
-
-            {/* Client Info Card */}
-            <div className="builder-card">
-              <div className="card-icon">🏢</div>
-              <h3 className="card-title">Client Information</h3>
-
-              <div className="form-field">
-                <label>Business Name</label>
-                <input
-                  type="text"
-                  value={businessName}
-                  onChange={(e) => setBusinessName(e.target.value)}
-                  placeholder="Enter client business name"
-                  className="text-input"
-                />
-              </div>
             </div>
 
             {/* Services Card */}
@@ -400,6 +489,20 @@ export default function ProposalBuilderPage() {
                 <label htmlFor="supporting-docs" className="upload-button">
                   + Add Documents
                 </label>
+
+                {/* Google Drive Integration */}
+                {googleDrive.isSignedIn && (
+                  <div style={{ marginTop: '1rem' }}>
+                    <button
+                      onClick={handleSupportingDocsFromDrive}
+                      className="btn btn-secondary btn-sm"
+                      style={{ width: '100%' }}
+                    >
+                      <span style={{ marginRight: '0.5rem' }}>📁</span>
+                      Select from Google Drive
+                    </button>
+                  </div>
+                )}
               </div>
 
               {supportingDocs.length > 0 && (
