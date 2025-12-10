@@ -77,7 +77,13 @@ Where:
      - This is the section that will be copied into the quote/contract system
      - Include all pricing details from the lineItemDefaults
   9. "## Next Steps"
-  10. "## Sign-off"
+     - Format the next steps as an indented bulleted list (use proper markdown list syntax with "- " prefix)
+     - Each step should be on its own line, properly indented under the heading
+  10. A warm, personalized closing paragraph (NO heading) that:
+     - Thanks the client by name for their time and consideration
+     - Expresses enthusiasm about the potential partnership
+     - Offers to answer any questions
+     - Signs off with "The Good Circle Marketing Team" or similar
 
 - services is an array with one object for each selected package.
 

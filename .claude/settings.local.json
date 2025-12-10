@@ -5,7 +5,13 @@
       "Bash(then cat package.json)",
       "Bash(fi)",
       "Bash(npm run dev:*)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(test:*)",
+      "Bash(npm install)",
+      "Bash(npm run kill-ports:*)",
+      "Bash(git add:*)",
+      "Bash(git log:*)",
+      "Bash(git commit:*)"
     ],
     "deny": [],
     "ask": []

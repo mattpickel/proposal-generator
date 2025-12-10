@@ -1,0 +1,62 @@
+1. Structure I’m assuming (based on your examples)
+
+For each proposal, the model will generate:
+
+A. Narrative proposal body (goes in “Comments / Proposal” area)
+
+Using a consistent section layout:
+
+Proposal Overview
+Short intro summarizing who the client is and what you’re helping them do.
+
+Primary Challenges (optional if you don’t send any)
+Bullet list pulled from your discovery / meeting notes.
+
+Our Recommended Plan
+Short explanation of which package(s) you recommend and why (e.g., Marketing Machine, 828 Plan, Good Start Minimal).
+
+Key Objectives
+3–6 bullets framed as outcomes.
+
+What’s Included
+For each selected service, sub-sections with bullets, modeled after:
+
+Good Start Minimal’s “Included Deliverables 1/2/3…” list. 
+
+good-start-minimal-with-comments
+
+Marketing Machine’s numbered “Meetings / Research and Analysis / Who You Are / Who You Help / How You Help / How You Tell the World / Making Sure It Works / Next Steps and Tools” list. 
+
+marketing-machine-only-with-com…
+
+828 Plan’s detailed breakdown of posts, blogs, SEO, ads, reporting, etc. 
+
+marketing-machine-plus-828
+
+Timeline (if relevant)
+Short paragraph like “4–6 weeks, depending on feedback and approvals.” 
+
+good-start-minimal-with-comments
+
+Investment
+Plain-language description of one-time strategy/brand fees + monthly retainers and payment splits, similar to your existing proposals.
+
+Next Steps
+2–4 simple steps (sign proposal, pay deposit, schedule kickoff, etc.).
+
+Sign-off
+Short closing in your voice (“All things good,” etc.).
+
+B. Line-item copy for each service
+
+For each selected package, return a short description that can be dropped into “Products & Services” line items, similar in length/tone to:
+
+“A comprehensive monthly content marketing package includes 4 scheduled social posts, 1 written and posted blog…” 
+
+828-only-with-comments
+
+“You need a Marketing Machine – a system of formulas and frameworks that help who you are, who you help, how you help, and how to tell the world about it.” 
+
+marketing-machine-only-with-com…
+
+You’ll control the prices / billing in your app; the model just writes the text.
