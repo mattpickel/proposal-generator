@@ -17,8 +17,25 @@ dotenv.config({ path: join(__dirname, '../.env') });
 const app = express();
 const PORT = process.env.PORT || 3002;
 
-// Middleware
-app.use(cors());
+// Middleware - CORS configuration
+const allowedOrigins = [
+  'https://proposals.goodcirclemarketing.com',
+  'http://localhost:5173',
+  'http://localhost:5175'
+];
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, Postman, etc)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(null, true); // Allow all for now, can restrict later
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}));
 app.use(express.json({ limit: '10mb' }));
 
 // Import route handlers
