@@ -1,12 +1,26 @@
 /**
- * Proposal Builder Page - Modern Redesigned Interface
+ * Proposal Builder Page - V2 JSON-First System
+ *
+ * This page implements the new JSON-first proposal system where:
+ * - Proposals are stored as structured JSON
+ * - AI only generates the "Comments from Marketing Lead" section
+ * - Services are pulled from a library deterministically
+ * - Rendering to HTML happens at the end for copy/paste to HighLevel
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Header, Toast, ProposalEditor, VoiceMemoButton } from '../components';
+import {
+  Header,
+  Toast,
+  VoiceMemoButton,
+  CommentsEditor,
+  ServiceEditor,
+  ProposalPreviewV2
+} from '../components';
 import { useToast } from '../hooks/useToast';
 import { useProposalBuilder } from '../hooks/useProposalBuilder';
+import { useProposalV2 } from '../hooks/useProposalV2';
 import { useGoogleDrive } from '../hooks/useGoogleDrive';
 import api from '../services/api';
 
@@ -27,15 +41,18 @@ export default function ProposalBuilderPage() {
   const [transcriptFile, setTranscriptFile] = useState(null);
   const [isAnalyzingTranscript, setIsAnalyzingTranscript] = useState(false);
   const [supportingDocs, setSupportingDocs] = useState([]);
-  const [processedDocs, setProcessedDocs] = useState([]); // { file, summary, status }
+  const [processedDocs, setProcessedDocs] = useState([]);
   const [isAnalyzingSupportingDocs, setIsAnalyzingSupportingDocs] = useState(false);
 
-  // Generated proposal (unified format)
-  const [generatedSections, setGeneratedSections] = useState([]); // Legacy support
-  const [fullProposalText, setFullProposalText] = useState('');
-  const [serviceDescriptions, setServiceDescriptions] = useState([]);
+  // View mode: 'edit' shows editors, 'preview' shows rendered HTML
+  const [viewMode, setViewMode] = useState('edit');
 
+  // Old builder hook (for transcript processing and client brief extraction)
   const builder = useProposalBuilder(apiKey, showToast);
+
+  // New V2 proposal hook (for JSON-first proposal management)
+  const proposalV2 = useProposalV2(apiKey, showToast);
+
   const googleDrive = useGoogleDrive();
 
   const serviceOptions = [
@@ -52,45 +69,41 @@ export default function ProposalBuilderPage() {
     async function loadExisting() {
       setIsLoading(true);
       try {
-        const existingArray = await api.database.proposals.getByOpportunityId(opportunityId);
-        const existing = existingArray && existingArray.length > 0 ? existingArray[0] : null;
+        // First try to load V2 proposal
+        const v2Proposal = await proposalV2.loadProposal(opportunityId);
 
-        if (existing) {
-          await builder.loadProposal(existing.id);
-          setBusinessName(existing.proposalName?.split(' - ')[1]?.replace(' Marketing Proposal', '') || '');
-          setSelectedServices(existing.serviceIds || []);
+        if (v2Proposal) {
+          // V2 proposal found
+          setBusinessName(v2Proposal.cover?.forClientOrg || '');
+          setClientName(v2Proposal.cover?.forClientName || '');
+          setSelectedServices(v2Proposal.services?.map(s => s.serviceKey) || []);
 
-          // Load service descriptions from proposal instance
-          if (existing.serviceDescriptions && existing.serviceDescriptions.length > 0) {
-            setServiceDescriptions(existing.serviceDescriptions);
-          }
-
-          // Load generated sections
-          const sections = await api.database.sections.getByProposalId(existing.id);
-          setGeneratedSections(sections || []);
-
-          // Handle unified format vs legacy sections
-          if (sections && sections.length > 0) {
-            // Check if this is a unified proposal (single section with sectionId 'unified_proposal')
-            const unifiedSection = sections.find(s => s.sectionId === 'unified_proposal');
-
-            if (unifiedSection) {
-              // New unified format
-              setFullProposalText(unifiedSection.content);
-              // Service descriptions already loaded from proposal instance above
-            } else {
-              // Legacy format - combine multiple sections
-              const combined = sections
-                .sort((a, b) => a.sectionId.localeCompare(b.sectionId))
-                .map(s => s.content)
-                .join('\n\n---\n\n');
-              setFullProposalText(combined);
+          // Load client brief if available
+          if (v2Proposal.clientBriefId && v2Proposal.clientBriefId !== 'manual_entry') {
+            try {
+              const brief = await api.database.clientBriefs.get(v2Proposal.clientBriefId);
+              if (brief) {
+                builder.clientBrief = brief;
+              }
+            } catch {
+              // Client brief not found, that's ok
             }
           }
 
-          showToast('Proposal loaded', 'success');
+          showToast('V2 Proposal loaded', 'success');
         } else {
-          showToast(`Ready to create proposal for ${opportunityId}`, 'success');
+          // No V2 proposal, check for legacy proposal
+          const existingArray = await api.database.proposals.getByOpportunityId(opportunityId);
+          const existing = existingArray && existingArray.length > 0 ? existingArray[0] : null;
+
+          if (existing) {
+            await builder.loadProposal(existing.id);
+            setBusinessName(existing.proposalName?.split(' - ')[1]?.replace(' Marketing Proposal', '') || '');
+            setSelectedServices(existing.serviceIds || []);
+            showToast('Legacy proposal loaded - generate again to convert to V2', 'info');
+          } else {
+            showToast(`Ready to create proposal for ${opportunityId}`, 'success');
+          }
         }
       } catch (error) {
         console.error('Error loading proposal:', error);
@@ -103,10 +116,13 @@ export default function ProposalBuilderPage() {
     loadExisting();
   }, [opportunityId]);
 
-  // Auto-populate business name from client brief
+  // Auto-populate from client brief
   useEffect(() => {
     if (builder.clientBrief?.clientName && !businessName) {
       setBusinessName(builder.clientBrief.clientName);
+    }
+    if (builder.clientBrief?.contactName && !clientName) {
+      setClientName(builder.clientBrief.contactName);
     }
   }, [builder.clientBrief]);
 
@@ -117,6 +133,7 @@ export default function ProposalBuilderPage() {
     }
   }, [builder.suggestedServices]);
 
+  // Transcript handling
   const handleTranscriptUpload = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -136,6 +153,7 @@ export default function ProposalBuilderPage() {
     }
   };
 
+  // Supporting docs handling
   const handleSupportingDocUpload = (e) => {
     const files = Array.from(e.target.files || []);
     if (files.length === 0) return;
@@ -145,7 +163,6 @@ export default function ProposalBuilderPage() {
   const handleAnalyzeSupportingDocs = async () => {
     if (supportingDocs.length === 0) return;
 
-    // Filter out already processed docs
     const unprocessedDocs = supportingDocs.filter(
       file => !processedDocs.find(d => d.file === file && d.status === 'complete')
     );
@@ -166,13 +183,12 @@ export default function ProposalBuilderPage() {
             setProcessedDocs(prev => prev.map(d =>
               d.file === file ? { ...d, status: 'complete', summary: doc.processedSummary } : d
             ));
-          } catch (error) {
+          } catch {
             setProcessedDocs(prev => prev.map(d =>
               d.file === file ? { ...d, status: 'error' } : d
             ));
           }
         } else {
-          // Mark as pending if no proposal yet
           setProcessedDocs(prev => prev.map(d =>
             d.file === file ? { ...d, status: 'pending', summary: 'Will process after creating proposal' } : d
           ));
@@ -187,7 +203,7 @@ export default function ProposalBuilderPage() {
     setSupportingDocs(prev => prev.filter((_, i) => i !== index));
   };
 
-  // Google Drive: Handle transcript from Drive
+  // Google Drive handlers
   const handleTranscriptFromDrive = async () => {
     try {
       await googleDrive.pickFiles('Select transcript from Drive', async (files) => {
@@ -204,7 +220,6 @@ export default function ProposalBuilderPage() {
     }
   };
 
-  // Google Drive: Handle supporting docs from Drive
   const handleSupportingDocsFromDrive = async () => {
     try {
       await googleDrive.pickFiles('Select supporting documents from Drive', async (files) => {
@@ -220,6 +235,7 @@ export default function ProposalBuilderPage() {
     }
   };
 
+  // Service toggle
   const toggleService = (serviceId) => {
     setSelectedServices(prev =>
       prev.includes(serviceId)
@@ -228,6 +244,7 @@ export default function ProposalBuilderPage() {
     );
   };
 
+  // Generate V2 proposal
   const handleGenerate = async () => {
     if (!businessName.trim() || selectedServices.length === 0) {
       showToast('Please enter business name and select at least one service', 'error');
@@ -235,72 +252,81 @@ export default function ProposalBuilderPage() {
     }
 
     try {
-      // Create proposal if it doesn't exist
-      let proposalId = builder.currentProposal?.id;
+      // Get or create client brief ID
+      let clientBriefId = builder.clientBrief?.id || 'manual_entry';
 
-      if (!proposalId) {
-        const clientBriefId = builder.clientBrief?.id || 'manual_entry';
-        const proposal = await builder.createProposal(
-          opportunityId,
-          clientBriefId,
-          businessName,
-          selectedServices
-        );
-        proposalId = proposal.id;
+      // If manual entry, create a minimal client brief
+      if (clientBriefId === 'manual_entry' && businessName) {
+        const brief = await api.database.clientBriefs.create({
+          clientName: businessName,
+          contactName: clientName || businessName,
+          clientOrganization: businessName,
+          goals: [],
+          painPoints: [],
+          opportunities: [],
+          stakeholders: []
+        });
+        clientBriefId = brief.id;
       }
 
-      // Build proposal metadata from custom prompt if provided
-      const proposalMetadata = customPrompt ? {
-        highLevelObjective: customPrompt
-      } : {};
+      // Create V2 proposal
+      await proposalV2.createProposal({
+        opportunityId,
+        clientBriefId,
+        selectedServiceIds: selectedServices,
+        proposalTitle: `Marketing Proposal for ${businessName}`,
+        customInstructions: customPrompt || null
+      });
 
-      // Generate unified proposal
-      const result = await builder.generateProposal(proposalId, proposalMetadata);
-
-      // Handle new unified format
-      if (result.proposalBody) {
-        setFullProposalText(result.proposalBody);
-        setServiceDescriptions(result.serviceDescriptions || []);
-        // Clear legacy sections
-        setGeneratedSections([]);
-      } else if (result && Array.isArray(result)) {
-        // Legacy format (array of sections) - for backwards compatibility
-        setGeneratedSections(result);
-        const combined = result
-          .sort((a, b) => a.sectionId.localeCompare(b.sectionId))
-          .map(s => s.content)
-          .join('\n\n---\n\n');
-        setFullProposalText(combined);
-      }
+      // Render the proposal for preview
+      await proposalV2.renderProposal(opportunityId);
 
     } catch (error) {
       console.error('Generation failed:', error);
     }
   };
 
-  const handleReviseSection = async (sectionId) => {
-    const comment = prompt('Enter revision instructions:');
-    if (!comment) return;
+  // Comments handlers
+  const handleSaveComments = async (comments) => {
+    if (!proposalV2.proposal?.id) return;
+    await proposalV2.updateComments(proposalV2.proposal.id, comments);
+    await proposalV2.renderProposal(proposalV2.proposal.id);
+  };
 
-    try {
-      const section = generatedSections.find(s => s.sectionId === sectionId);
-      if (!section) return;
+  const handleRegenerateComments = async (feedback) => {
+    if (!proposalV2.proposal?.id) return;
+    await proposalV2.regenerateComments(proposalV2.proposal.id, feedback);
+    await proposalV2.renderProposal(proposalV2.proposal.id);
+  };
 
-      const revised = await builder.reviseProposalSection(section.id, comment);
+  // Service toggle in proposal
+  const handleToggleService = async (serviceKey, enabled) => {
+    if (!proposalV2.proposal?.id) return;
+    await proposalV2.toggleService(proposalV2.proposal.id, serviceKey, enabled);
+    await proposalV2.renderProposal(proposalV2.proposal.id);
+  };
 
-      // Update the section in the list
-      const updatedSections = generatedSections.map(s => s.id === section.id ? revised : s);
-      setGeneratedSections(updatedSections);
+  // Service overrides
+  const handleUpdateServiceOverrides = async (serviceKey, overrides) => {
+    if (!proposalV2.proposal?.id) return;
+    await proposalV2.updateServiceOverrides(proposalV2.proposal.id, serviceKey, overrides);
+    await proposalV2.renderProposal(proposalV2.proposal.id);
+  };
 
-      // Update full text
-      const combined = updatedSections
-        .sort((a, b) => a.sectionId.localeCompare(b.sectionId))
-        .map(s => s.content)
-        .join('\n\n---\n\n');
-      setFullProposalText(combined);
-    } catch (error) {
-      console.error('Revision failed:', error);
+  // Render request callback
+  const handleRenderRequest = useCallback(async () => {
+    if (proposalV2.proposal?.id) {
+      await proposalV2.renderProposal(proposalV2.proposal.id);
     }
+  }, [proposalV2.proposal?.id]);
+
+  // Copy handlers
+  const handleCopyHtml = async () => {
+    return await proposalV2.copyToClipboard('html');
+  };
+
+  const handleCopyPlain = async () => {
+    return await proposalV2.copyToClipboard('plain');
   };
 
   if (isLoading) {
@@ -315,6 +341,8 @@ export default function ProposalBuilderPage() {
     );
   }
 
+  const isProcessing = builder.isProcessing || proposalV2.isLoading;
+
   return (
     <div className="app-container">
       <Header />
@@ -324,6 +352,22 @@ export default function ProposalBuilderPage() {
           <h1 className="builder-title">Proposal Builder</h1>
           <div className="builder-header-right">
             <div className="opportunity-badge">{opportunityId}</div>
+            {proposalV2.proposal && (
+              <div className="view-toggle">
+                <button
+                  className={`toggle-btn ${viewMode === 'edit' ? 'active' : ''}`}
+                  onClick={() => setViewMode('edit')}
+                >
+                  Edit
+                </button>
+                <button
+                  className={`toggle-btn ${viewMode === 'preview' ? 'active' : ''}`}
+                  onClick={() => setViewMode('preview')}
+                >
+                  Preview
+                </button>
+              </div>
+            )}
             <button
               className="btn btn-secondary"
               onClick={() => navigate('/')}
@@ -339,7 +383,7 @@ export default function ProposalBuilderPage() {
 
             {/* Client Info Card */}
             <div className="builder-card">
-              <div className="card-icon">🏢</div>
+              <div className="card-icon">&#x1F3E2;</div>
               <h3 className="card-title">Client Information</h3>
 
               <div className="form-field">
@@ -367,7 +411,7 @@ export default function ProposalBuilderPage() {
 
             {/* Transcript Upload Card */}
             <div className="builder-card">
-              <div className="card-icon">📝</div>
+              <div className="card-icon">&#x1F4DD;</div>
               <h3 className="card-title">Meeting Transcript</h3>
               <p className="card-description">Upload Fireflies transcript to auto-extract client info</p>
 
@@ -380,10 +424,9 @@ export default function ProposalBuilderPage() {
                   style={{ display: 'none' }}
                 />
                 <label htmlFor="transcript-upload" className="upload-button">
-                  {transcriptFile ? `✓ ${transcriptFile.name}` : '+ Upload Transcript'}
+                  {transcriptFile ? `OK ${transcriptFile.name}` : '+ Upload Transcript'}
                 </label>
 
-                {/* Google Drive Integration */}
                 <div style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                   {!googleDrive.isSignedIn ? (
                     <button
@@ -391,7 +434,7 @@ export default function ProposalBuilderPage() {
                       className="btn btn-secondary btn-sm"
                       style={{ width: '100%' }}
                     >
-                      <span style={{ marginRight: '0.5rem' }}>📁</span>
+                      <span style={{ marginRight: '0.5rem' }}>&#x1F4C1;</span>
                       Sign in to Google Drive
                     </button>
                   ) : (
@@ -401,7 +444,7 @@ export default function ProposalBuilderPage() {
                         className="btn btn-secondary btn-sm"
                         style={{ width: '100%' }}
                       >
-                        <span style={{ marginRight: '0.5rem' }}>📁</span>
+                        <span style={{ marginRight: '0.5rem' }}>&#x1F4C1;</span>
                         Select from Google Drive
                       </button>
                       <button
@@ -415,7 +458,6 @@ export default function ProposalBuilderPage() {
                   )}
                 </div>
 
-                {/* Analyze Button */}
                 {transcriptFile && (
                   <div style={{ marginTop: '1rem' }}>
                     {isAnalyzingTranscript ? (
@@ -439,15 +481,14 @@ export default function ProposalBuilderPage() {
               {builder.clientBrief && (
                 <div style={{ marginTop: '1rem' }}>
                   <div className="info-box success">
-                    <strong>✓ Brief Extracted</strong>
+                    <strong>OK Brief Extracted</strong>
                     <div style={{ fontSize: '0.95rem', marginTop: '0.5rem' }}>
                       <div><strong>{builder.clientBrief.clientName}</strong></div>
                       {builder.clientBrief.industry && <div>{builder.clientBrief.industry}</div>}
-                      {builder.clientBrief.location && <div>📍 {builder.clientBrief.location}</div>}
+                      {builder.clientBrief.location && <div>&#x1F4CD; {builder.clientBrief.location}</div>}
                     </div>
                   </div>
 
-                  {/* Goals */}
                   {builder.clientBrief.goals && builder.clientBrief.goals.length > 0 && (
                     <div style={{ marginTop: '0.75rem', fontSize: '0.9rem' }}>
                       <div style={{ fontWeight: 600, marginBottom: '0.25rem', color: '#0f172a' }}>Goals:</div>
@@ -459,7 +500,6 @@ export default function ProposalBuilderPage() {
                     </div>
                   )}
 
-                  {/* Pain Points */}
                   {builder.clientBrief.painPoints && builder.clientBrief.painPoints.length > 0 && (
                     <div style={{ marginTop: '0.75rem', fontSize: '0.9rem' }}>
                       <div style={{ fontWeight: 600, marginBottom: '0.25rem', color: '#0f172a' }}>Challenges:</div>
@@ -476,7 +516,7 @@ export default function ProposalBuilderPage() {
 
             {/* Services Card */}
             <div className="builder-card">
-              <div className="card-icon">⚙️</div>
+              <div className="card-icon">&#x2699;&#xFE0F;</div>
               <h3 className="card-title">Select Services</h3>
 
               <div className="services-list">
@@ -497,16 +537,16 @@ export default function ProposalBuilderPage() {
 
               {builder.suggestedServices.length > 0 && (
                 <div className="info-box">
-                  ✨ Services pre-selected based on transcript
+                  Services pre-selected based on transcript
                 </div>
               )}
             </div>
 
             {/* Custom Instructions Card */}
             <div className="builder-card">
-              <div className="card-icon">✏️</div>
+              <div className="card-icon">&#x270F;&#xFE0F;</div>
               <h3 className="card-title">Custom Instructions</h3>
-              <p className="card-description">Optional: Add specific requirements or focus areas</p>
+              <p className="card-description">Optional: Add specific requirements for the comments section</p>
 
               <div className="text-input-with-voice">
                 <textarea
@@ -518,14 +558,14 @@ export default function ProposalBuilderPage() {
                 />
                 <VoiceMemoButton
                   onTranscript={(text) => setCustomPrompt(prev => prev ? `${prev}\n${text}` : text)}
-                  disabled={builder.isProcessing}
+                  disabled={isProcessing}
                 />
               </div>
             </div>
 
             {/* Supporting Documents Card */}
             <div className="builder-card">
-              <div className="card-icon">📎</div>
+              <div className="card-icon">&#x1F4CE;</div>
               <h3 className="card-title">Supporting Documents</h3>
               <p className="card-description">Brand guidelines, existing materials, etc.</p>
 
@@ -542,7 +582,6 @@ export default function ProposalBuilderPage() {
                   + Add Documents
                 </label>
 
-                {/* Google Drive Integration */}
                 {googleDrive.isSignedIn && (
                   <div style={{ marginTop: '1rem' }}>
                     <button
@@ -550,7 +589,7 @@ export default function ProposalBuilderPage() {
                       className="btn btn-secondary btn-sm"
                       style={{ width: '100%' }}
                     >
-                      <span style={{ marginRight: '0.5rem' }}>📁</span>
+                      <span style={{ marginRight: '0.5rem' }}>&#x1F4C1;</span>
                       Select from Google Drive
                     </button>
                   </div>
@@ -562,17 +601,6 @@ export default function ProposalBuilderPage() {
                   <div className="file-list">
                     {supportingDocs.map((file, index) => {
                       const processed = processedDocs.find(d => d.file === file);
-                      // Parse summary if it's a JSON string
-                      let summaryData = null;
-                      if (processed?.summary) {
-                        try {
-                          summaryData = typeof processed.summary === 'string'
-                            ? JSON.parse(processed.summary)
-                            : processed.summary;
-                        } catch {
-                          summaryData = { keyPoints: [processed.summary] };
-                        }
-                      }
                       return (
                         <div key={index} className="file-item" style={{ flexDirection: 'column', alignItems: 'flex-start' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center', gap: '0.5rem' }}>
@@ -583,49 +611,25 @@ export default function ProposalBuilderPage() {
                               minWidth: 0,
                               flex: 1
                             }}>
-                              📄 {file.name}
-                              {processed?.status === 'processing' && ' ⏳'}
-                              {processed?.status === 'complete' && ' ✓'}
-                              {processed?.status === 'pending' && ' ⏸'}
-                              {processed?.status === 'error' && ' ❌'}
+                              &#x1F4C4; {file.name}
+                              {processed?.status === 'processing' && ' ...'}
+                              {processed?.status === 'complete' && ' OK'}
+                              {processed?.status === 'pending' && ' ||'}
+                              {processed?.status === 'error' && ' X'}
                             </span>
                             <button
                               className="remove-btn"
                               onClick={() => removeSupportingDoc(index)}
                               style={{ flexShrink: 0 }}
                             >
-                              ×
+                              x
                             </button>
                           </div>
-                          {summaryData && (
-                            <div style={{
-                              marginTop: '0.5rem',
-                              fontSize: '0.85rem',
-                              color: '#64748b',
-                              lineHeight: '1.4',
-                              paddingLeft: '1.5rem',
-                              width: '100%'
-                            }}>
-                              {summaryData.keyPoints && summaryData.keyPoints.length > 0 && (
-                                <ul style={{ margin: 0, paddingLeft: '1rem' }}>
-                                  {summaryData.keyPoints.slice(0, 3).map((point, i) => (
-                                    <li key={i} style={{ marginBottom: '0.25rem' }}>{point}</li>
-                                  ))}
-                                </ul>
-                              )}
-                              {summaryData.uniqueValue && (
-                                <div style={{ marginTop: '0.25rem', fontStyle: 'italic' }}>
-                                  {summaryData.uniqueValue}
-                                </div>
-                              )}
-                            </div>
-                          )}
                         </div>
                       );
                     })}
                   </div>
 
-                  {/* Analyze Button */}
                   <div style={{ marginTop: '1rem' }}>
                     {isAnalyzingSupportingDocs ? (
                       <div className="analyze-loading">
@@ -653,57 +657,67 @@ export default function ProposalBuilderPage() {
             <button
               className="generate-btn"
               onClick={handleGenerate}
-              disabled={builder.isProcessing || !businessName.trim() || selectedServices.length === 0}
+              disabled={isProcessing || !businessName.trim() || selectedServices.length === 0}
             >
-              {builder.isProcessing ? '⏳ Generating...' : '🚀 Generate Proposal'}
+              {isProcessing ? '... Generating...' : 'Generate Proposal'}
             </button>
 
-            {builder.generationProgress && (
+            {proposalV2.isLoading && (
               <div className="progress-card">
-                <p className="progress-label">{builder.generationProgress.sectionTitle}</p>
+                <p className="progress-label">Creating proposal...</p>
                 <div className="progress-bar">
-                  <div
-                    className="progress-fill"
-                    style={{ width: `${(builder.generationProgress.current / builder.generationProgress.total) * 100}%` }}
-                  />
+                  <div className="progress-fill" style={{ width: '50%' }} />
                 </div>
-                <p className="progress-text">
-                  {builder.generationProgress.current} of {builder.generationProgress.total} sections
-                </p>
               </div>
             )}
           </div>
 
-          {/* Right Column - Generated Proposal */}
+          {/* Right Column - Proposal Content */}
           <div className="builder-content">
-            {fullProposalText ? (
-              <>
-                <ProposalEditor
-                  proposalText={fullProposalText}
-                  onProposalChange={setFullProposalText}
-                  wordCount={fullProposalText.split(/\s+/).length}
-                  isGenerating={builder.isProcessing}
-                  onIterate={async (feedback) => {
-                    try {
-                      showToast('Updating proposal...', 'info');
-                      const result = await api.generation.iterateProposal(apiKey, fullProposalText, feedback);
-                      if (result.proposal) {
-                        setFullProposalText(result.proposal);
-                        showToast('Proposal updated successfully!', 'success');
-                        return true;
-                      }
-                    } catch (error) {
-                      showToast(`Failed to update proposal: ${error.message}`, 'error');
-                    }
-                    return false;
-                  }}
+            {proposalV2.proposal ? (
+              viewMode === 'edit' ? (
+                <div className="proposal-edit-view">
+                  {/* Comments Editor */}
+                  <CommentsEditor
+                    comments={proposalV2.proposal.comments}
+                    onSave={handleSaveComments}
+                    onRegenerate={handleRegenerateComments}
+                    isLoading={proposalV2.isLoading}
+                  />
+
+                  {/* Service Editors */}
+                  <div className="services-section" style={{ marginTop: '1.5rem' }}>
+                    <h3 style={{ marginBottom: '1rem', color: '#1e293b' }}>Services</h3>
+                    {proposalV2.proposal.services.map(service => (
+                      <ServiceEditor
+                        key={service.serviceKey}
+                        service={service}
+                        onToggle={(enabled) => handleToggleService(service.serviceKey, enabled)}
+                        onUpdateOverrides={(overrides) => handleUpdateServiceOverrides(service.serviceKey, overrides)}
+                        isLoading={proposalV2.isLoading}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <ProposalPreviewV2
+                  proposal={proposalV2.proposal}
+                  renderedHtml={proposalV2.renderedHtml}
+                  onRenderRequest={handleRenderRequest}
+                  onCopyHtml={handleCopyHtml}
+                  onCopyPlain={handleCopyPlain}
+                  isLoading={proposalV2.isLoading}
                 />
-              </>
+              )
             ) : (
               <div className="empty-proposal">
-                <div className="empty-icon">📄</div>
+                <div className="empty-icon">&#x1F4C4;</div>
                 <h2>No Proposal Yet</h2>
                 <p>Fill in the client information and select services, then click Generate Proposal to begin.</p>
+                <p style={{ fontSize: '0.9rem', color: '#64748b', marginTop: '1rem' }}>
+                  This uses the new JSON-first system where AI only generates the personal comments section.
+                  Services, pricing, and terms come directly from templates.
+                </p>
               </div>
             )}
           </div>
@@ -711,6 +725,40 @@ export default function ProposalBuilderPage() {
       </main>
 
       <Toast toast={toast} />
+
+      <style>{`
+        .view-toggle {
+          display: flex;
+          background: #f1f5f9;
+          border-radius: 6px;
+          padding: 2px;
+        }
+        .toggle-btn {
+          padding: 0.5rem 1rem;
+          border: none;
+          background: transparent;
+          cursor: pointer;
+          border-radius: 4px;
+          font-size: 0.9rem;
+          color: #64748b;
+          transition: all 0.2s;
+        }
+        .toggle-btn.active {
+          background: white;
+          color: #1e293b;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .toggle-btn:hover:not(.active) {
+          color: #334155;
+        }
+        .proposal-edit-view {
+          padding: 1rem;
+        }
+        .services-section h3 {
+          font-size: 1.1rem;
+          font-weight: 600;
+        }
+      `}</style>
     </div>
   );
 }

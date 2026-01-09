@@ -3,14 +3,14 @@
  * Communicates with backend Express API
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3002/api';
 
 class APIClient {
   constructor(baseURL) {
     this.baseURL = baseURL;
   }
 
-  async request(endpoint, options = {}) {
+  async request(endpoint, options = {}, responseType = 'json') {
     const url = `${this.baseURL}${endpoint}`;
     const config = {
       headers: {
@@ -33,6 +33,11 @@ class APIClient {
 
     if (response.status === 204) {
       return null;
+    }
+
+    // Return text for non-JSON responses (like HTML)
+    if (responseType === 'text') {
+      return response.text();
     }
 
     return response.json();
@@ -159,6 +164,74 @@ class APIClient {
         method: 'POST',
         body: { apiKey, currentProposal, feedback },
       }),
+  };
+
+  // Proposals V2 - JSON-first proposal system
+  proposalsV2 = {
+    // Create new proposal (assembles skeleton + generates AI comments)
+    create: (data) =>
+      this.request('/proposals/v2', {
+        method: 'POST',
+        body: data,
+      }),
+
+    // Get proposal JSON
+    get: (id) =>
+      this.request(`/proposals/v2/${id}`),
+
+    // Update or regenerate comments
+    updateComments: (id, data) =>
+      this.request(`/proposals/v2/${id}/comments`, {
+        method: 'PATCH',
+        body: data,
+      }),
+
+    // Update cover block
+    updateCover: (id, cover) =>
+      this.request(`/proposals/v2/${id}/cover`, {
+        method: 'PATCH',
+        body: { cover },
+      }),
+
+    // Update service overrides or toggle enabled
+    updateService: (id, serviceKey, data) =>
+      this.request(`/proposals/v2/${id}/services/${serviceKey}`, {
+        method: 'PATCH',
+        body: data,
+      }),
+
+    // Add optional module
+    addModule: (id, module) =>
+      this.request(`/proposals/v2/${id}/modules`, {
+        method: 'POST',
+        body: module,
+      }),
+
+    // Remove module
+    removeModule: (id, moduleKey) =>
+      this.request(`/proposals/v2/${id}/modules/${moduleKey}`, {
+        method: 'DELETE',
+      }),
+
+    // Render to HTML
+    renderHtml: (id) =>
+      this.request(`/proposals/v2/${id}/render?format=html`, {}, 'text'),
+
+    // Render to plain text
+    renderPlain: (id) =>
+      this.request(`/proposals/v2/${id}/render?format=plain`, {}, 'text'),
+
+    // Render body only (for embedding)
+    renderBody: (id) =>
+      this.request(`/proposals/v2/${id}/render?format=body`, {}, 'text'),
+
+    // Validate proposal
+    validate: (id) =>
+      this.request(`/proposals/v2/${id}/validate`),
+
+    // Delete proposal
+    delete: (id) =>
+      this.request(`/proposals/v2/${id}`, { method: 'DELETE' }),
   };
 }
 

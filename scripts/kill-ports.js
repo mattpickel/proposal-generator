@@ -6,7 +6,7 @@
 const { execSync } = require('child_process');
 const os = require('os');
 
-const PORTS = [3001, 5173]; // Backend and Frontend ports
+const PORTS = [3002, 5175]; // Backend and Frontend ports
 
 function killPort(port) {
   const platform = os.platform();

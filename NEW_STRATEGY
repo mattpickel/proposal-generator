@@ -1,0 +1,497 @@
+# Proposal Generator Plan (JSON → Copy/Paste Document for HighLevel)
+
+## Objective
+Build a proposal-generation system that produces **consistently formatted marketing proposals** matching our most recent PDF proposal style.
+
+The system should:
+- Assemble proposals from **structured JSON**
+- Render proposals into **clean, predictable HTML**
+- Allow users to **copy/paste formatted output into HighLevel**
+- Use AI **only for variable narrative sections**, not structure or pricing
+
+---
+
+## Canonical Section Order (System-Controlled)
+
+The application, not AI, enforces this order:
+
+1. Cover / Title Block
+2. Comments from Marketing Lead (AI-generated)
+3. Service Sections (0..N, from Service Library)
+4. Optional Modules (e.g., Past Clients)
+5. Itemized Products / Services (HighLevel-driven or placeholder)
+6. Purchase Terms (always included)
+7. Signatures (HighLevel-driven or placeholder)
+
+---
+
+## Core Design Principles
+
+1. **JSON First**
+   - The proposal is always stored and manipulated as structured JSON.
+   - Rendering to HTML happens only at the final step.
+
+2. **AI is Scoped**
+   - AI generates only:
+     - Proposal title phrasing (optional)
+     - Comments / intro from marketing lead
+   - AI never generates:
+     - Service descriptions
+     - Deliverables
+     - Pricing
+     - Terms
+     - Signatures
+
+3. **Service Sections are Modular**
+   - Services are stored as reusable modules.
+   - Included services are deterministically inserted.
+   - Users may tweak service text per proposal.
+
+4. **Formatting is Deterministic**
+   - No em dashes allowed.
+   - Headings, numbering, spacing enforced by renderer.
+
+5. **HighLevel is Source of Truth**
+   - Itemized line items
+   - Signatures
+   - Proposal acceptance workflow
+
+---
+
+## Proposal JSON Schema (Conceptual)
+
+### Proposal Root
+- `id: string`
+- `createdAt: ISO string`
+- `version`
+  - `templateVersion: string`
+  - `serviceLibraryVersion: string`
+  - `termsVersion: string`
+- `cover: CoverBlock`
+- `comments: CommentsBlock`
+- `services: ServiceBlock[]`
+- `modules: ModuleBlock[]`
+- `itemized: ItemizedBlock`
+- `terms: TermsBlock`
+- `signatures: SignatureBlock`
+- `styleRules: StyleRules`
+
+---
+
+### CoverBlock
+Deterministic, never AI-generated.
+
+- `proposalTitle: string`
+- `brandName: string`
+- `preparedByName: string`
+- `preparedByTitle: string`
+- `quoteCreatedDate: string`
+- `forClientName: string`
+- `forClientOrg: string`
+- `forClientEmail: string`
+
+Rendered as stacked lines with the title as the primary heading.
+
+---
+
+### CommentsBlock (AI-Generated)
+Only variable narrative section.
+
+- `heading: string`  
+  Example: "Comments from Kathryn"
+
+- `greetingLine: string`  
+  Example: "Hi Heather,"
+
+- `paragraphs: string[]`  
+  - 2–5 short paragraphs
+  - Strategy summary
+  - Client relevance
+  - Rationale / next steps
+
+- `signoff: string`  
+  - Must NOT contain em dashes
+  - Example: "Kathryn" or "- Kathryn"
+
+---
+
+### ServiceBlock
+Pulled from Service Library, then optionally overridden.
+
+- `serviceKey: string`
+- `displayNameCaps: string`  
+  Example: "THE 828 PLAN"
+- `subsections: ServiceSubsection[]`
+- `investment: Investment`
+- `overrides?`
+  - subsection body overrides
+  - investment overrides
+- `enabled: boolean`
+
+---
+
+### ServiceSubsection
+Numbering and titles are fixed to maintain consistency.
+
+- `number: number` (1..N)
+- `title: string`
+- `bodyMarkdown: string`
+- `allowClientSpecificEdits: boolean`
+
+Rendered as:
+
+3. What's Included
+
+---
+
+### Investment (Structured)
+Pricing is structured, not free text.
+
+- `model: "one_time" | "monthly" | "quarterly" | "custom"`
+- `amount?: number`
+- `currency: "USD"`
+- `notes?: string`
+- `renderHint?: string`  
+  Example: "$5,000 one-time investment"
+
+---
+
+### ModuleBlock (Optional Sections)
+Used for items like "Past Clients".
+
+- `moduleKey: string`
+- `titleCaps?: string`
+- `bodyMarkdown: string`
+- `enabled: boolean`
+
+---
+
+### ItemizedBlock
+HighLevel-managed.
+
+- `source: "highlevel" | "placeholder"`
+- `placeholderText?: string`
+- `highLevel?:`
+  - `opportunityId?: string`
+  - `estimateId?: string`
+- `summary?:`
+  - `total?: number`
+  - `billingSchedule?: string`
+
+---
+
+### TermsBlock
+Always included, fixed content.
+
+- `titleCaps: string`  
+  Example: "CONSULTING AGREEMENT"
+- `clauses: Clause[]`
+
+#### Clause
+- `number: number`
+- `title?: string`
+- `body: string`
+
+---
+
+### SignatureBlock
+Handled in HighLevel.
+
+- `source: "highlevel" | "placeholder"`
+- `placeholderText?: string`
+- `highLevelEmbed?:`
+  - `url?: string`
+  - `instructions?: string`
+
+---
+
+### StyleRules
+- `forbidEmDash: true`
+- `tone: "professional_personal"`
+- `numberedSubsections: true`
+- `capsServiceTitles: true`
+- `bulletsStyle: "ul"`
+
+---
+
+## Service Library
+
+### Storage
+- Stored as JSON or Markdown files in repo  
+  `/proposal_templates/services/`
+- Or DB table `service_modules`
+
+### Required Fields
+- `serviceKey`
+- `displayNameCaps`
+- `subsections[]`
+- default `investment`
+- `placeholdersAllowed[]`
+
+### Placeholder Rules
+- Whitelisted placeholders only  
+  Examples:
+  - `{{client_name}}`
+  - `{{client_org}}`
+  - `{{primary_goal}}`
+
+Never allow arbitrary interpolation.
+
+---
+
+## AI Prompting Strategy
+
+### Purpose
+Generate:
+- Proposal title phrasing (optional)
+- Comments from marketing lead
+
+### Inputs
+- Client name + company
+- Meeting summary
+- Supporting document excerpts (trimmed)
+- Freeform user instructions
+- Selected service names (context only)
+
+### Hard Constraints
+- JSON output only
+- No em dashes
+- 2–5 paragraphs
+- No pricing
+- No service descriptions
+- No signatures or terms
+
+### Expected Output
+```json
+{
+  "proposalTitle": "Optional title",
+  "comments": {
+    "heading": "Comments from Kathryn",
+    "greetingLine": "Hi Heather,",
+    "paragraphs": ["...", "..."],
+    "signoff": "Kathryn"
+  }
+}
+
+Post-Processing / Linting
+
+Run deterministic validation after AI response:
+
+Replace or reject em dashes
+
+Trim excess whitespace
+
+Enforce paragraph count
+
+Validate JSON shape
+
+If validation fails:
+
+Apply deterministic fixes OR
+
+Retry with a strict repair prompt
+
+Rendering Strategy (JSON → HTML)
+Goals
+
+Match PDF feel
+
+Survive HighLevel paste behavior
+
+Minimal styling, semantic HTML
+
+HTML Rules
+
+h1: Proposal title
+
+h2: Major sections (Comments, Service Names, Terms)
+
+h3: Numbered subsections
+
+p: Paragraphs
+
+ul/li: Lists
+
+Avoid tables unless required
+
+Renderer Function
+
+Implement:
+
+renderProposalToHtml(proposal): string
+
+
+Rendering order:
+
+Cover
+
+Comments
+
+Services
+
+Optional modules
+
+Itemized section
+
+Terms
+
+Signatures
+
+Markdown in bodies converted via a restricted markdown parser.
+
+Clipboard Copy (React)
+
+Provide:
+
+Copy Formatted (HTML)
+
+Copy Plain Text
+
+Implementation:
+
+Use Clipboard API with both text/html and text/plain
+
+Fallback to plain text if HTML copy fails
+
+Include a live preview pane rendering the HTML.
+
+Backend API (Node)
+Create Proposal
+
+POST /api/proposals
+
+Steps:
+
+Create proposal skeleton
+
+Attach selected service modules
+
+Attach purchase terms
+
+Call AI for comments
+
+Lint and validate
+
+Save and return proposal JSON
+
+Update Comments
+
+PATCH /api/proposals/:id/comments
+
+Update Service Overrides
+
+PATCH /api/proposals/:id/services/:serviceKey
+
+Render Proposal
+
+GET /api/proposals/:id/render?format=html|plain
+
+HighLevel Integration
+Itemized Products
+
+Managed in HighLevel
+
+Proposal includes placeholder or fetched summary
+
+Signatures
+
+Managed in HighLevel
+
+Proposal includes placeholder or embed metadata
+
+UX Requirements
+
+Fixed-order service selection
+
+Inline editors for:
+
+comments
+
+service subsections
+
+investment fields
+
+Always-on preview
+
+Version display (template/services/terms)
+
+Copy buttons clearly visible
+
+Deterministic Formatting Rules
+
+No em dashes anywhere
+
+Service titles always ALL CAPS
+
+Subsections always numbered
+
+Investment section always present if service included
+
+Purchase terms always appended last
+
+Testing
+Unit Tests
+
+HTML renderer snapshots
+
+Lint rules
+
+Placeholder interpolation
+
+Integration Tests
+
+Proposal creation end-to-end
+
+Ordering consistency
+
+AI validation behavior
+
+Manual QA
+
+Paste into HighLevel
+
+Verify headings, spacing, lists survive paste
+
+Implementation Order
+
+Define JSON schema / types
+
+Build Service Library
+
+Implement proposal assembly
+
+Implement HTML renderer
+
+Build React preview + copy
+
+Add AI comments generation
+
+Add lint/repair logic
+
+Add HighLevel placeholders
+
+Add tests
+
+Deliverables
+
+Proposal schema definition
+
+Service module files
+
+Purchase terms module
+
+HTML renderer
+
+Lint/validation utilities
+
+Proposal editor UI
+
+API endpoints
+
+Constraints
+
+Formatting must remain stable when pasted into HighLevel
+
+AI must never control structure or pricing
+
+System must support future service additions without schema changes
