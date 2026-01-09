@@ -233,6 +233,23 @@ class APIClient {
     delete: (id) =>
       this.request(`/proposals/v2/${id}`, { method: 'DELETE' }),
   };
+
+  // GoHighLevel integration
+  ghl = {
+    // Get opportunity with contact data
+    getOpportunity: (opportunityId) =>
+      this.request(`/ghl/opportunities/${opportunityId}`),
+
+    // Preview import (get ClientBrief format without saving)
+    previewImport: (opportunityId) =>
+      this.request(`/ghl/opportunities/${opportunityId}/preview`),
+
+    // Import opportunity as ClientBrief (saves to database)
+    importOpportunity: (opportunityId) =>
+      this.request(`/ghl/opportunities/${opportunityId}/import`, {
+        method: 'POST',
+      }),
+  };
 }
 
 export const api = new APIClient(API_BASE_URL);

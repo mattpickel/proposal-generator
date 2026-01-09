@@ -26,12 +26,14 @@ import databaseRoutes from './routes/database.js';
 import extractionRoutes from './routes/extraction.js';
 import generationRoutes from './routes/generation.js';
 import proposalsV2Routes from './routes/proposals.js';
+import ghlRoutes from './routes/ghl.js';
 
 // Routes
 app.use('/api/database', databaseRoutes);
 app.use('/api/extraction', extractionRoutes);
 app.use('/api/generation', generationRoutes);
 app.use('/api/proposals', proposalsV2Routes);
+app.use('/api/ghl', ghlRoutes);
 
 // Health check
 app.get('/health', (req, res) => {

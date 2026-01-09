@@ -44,6 +44,10 @@ export default function ProposalBuilderPage() {
   const [processedDocs, setProcessedDocs] = useState([]);
   const [isAnalyzingSupportingDocs, setIsAnalyzingSupportingDocs] = useState(false);
 
+  // GHL import state
+  const [isImportingFromGHL, setIsImportingFromGHL] = useState(false);
+  const [ghlImportData, setGhlImportData] = useState(null);
+
   // View mode: 'edit' shows editors, 'preview' shows rendered HTML
   const [viewMode, setViewMode] = useState('edit');
 
@@ -235,6 +239,42 @@ export default function ProposalBuilderPage() {
     }
   };
 
+  // GHL import handler
+  const handleImportFromGHL = async () => {
+    if (!opportunityId) {
+      showToast('No opportunity ID available', 'error');
+      return;
+    }
+
+    setIsImportingFromGHL(true);
+    try {
+      const result = await api.ghl.importOpportunity(opportunityId);
+
+      if (result.clientBrief) {
+        // Store the imported data
+        setGhlImportData(result);
+
+        // Populate form fields from the client brief
+        if (result.clientBrief.clientName) {
+          setBusinessName(result.clientBrief.clientName);
+        }
+        if (result.clientBrief.stakeholders?.[0]?.name) {
+          setClientName(result.clientBrief.stakeholders[0].name);
+        }
+
+        // Set the client brief in the builder
+        builder.clientBrief = result.clientBrief;
+
+        showToast('Client info imported from GHL', 'success');
+      }
+    } catch (error) {
+      console.error('GHL import failed:', error);
+      showToast(`GHL import failed: ${error.message}`, 'error');
+    } finally {
+      setIsImportingFromGHL(false);
+    }
+  };
+
   // Service toggle
   const toggleService = (serviceId) => {
     setSelectedServices(prev =>
@@ -386,6 +426,33 @@ export default function ProposalBuilderPage() {
               <div className="card-icon">&#x1F3E2;</div>
               <h3 className="card-title">Client Information</h3>
 
+              {/* GHL Import Button */}
+              <div style={{ marginBottom: '1rem' }}>
+                <button
+                  onClick={handleImportFromGHL}
+                  disabled={isImportingFromGHL}
+                  className="btn btn-secondary"
+                  style={{ width: '100%' }}
+                >
+                  {isImportingFromGHL ? (
+                    <>
+                      <span className="spinner-small" style={{ marginRight: '0.5rem' }}></span>
+                      Importing from GHL...
+                    </>
+                  ) : (
+                    <>
+                      <span style={{ marginRight: '0.5rem' }}>&#x1F517;</span>
+                      Import from GoHighLevel
+                    </>
+                  )}
+                </button>
+                {ghlImportData && (
+                  <div className="info-box success" style={{ marginTop: '0.5rem', fontSize: '0.85rem' }}>
+                    Imported from GHL opportunity
+                  </div>
+                )}
+              </div>
+
               <div className="form-field">
                 <label>Business Name</label>
                 <input
@@ -407,6 +474,28 @@ export default function ProposalBuilderPage() {
                   className="text-input"
                 />
               </div>
+
+              {/* Show GHL contact details if imported */}
+              {ghlImportData?.clientBrief?.stakeholders?.[0] && (
+                <div style={{ marginTop: '0.75rem', padding: '0.75rem', background: '#f8fafc', borderRadius: '6px', fontSize: '0.85rem' }}>
+                  <div style={{ fontWeight: 600, marginBottom: '0.5rem', color: '#475569' }}>GHL Contact Info:</div>
+                  {ghlImportData.clientBrief.stakeholders[0].email && (
+                    <div style={{ color: '#64748b' }}>
+                      &#x2709;&#xFE0F; {ghlImportData.clientBrief.stakeholders[0].email}
+                    </div>
+                  )}
+                  {ghlImportData.clientBrief.stakeholders[0].phone && (
+                    <div style={{ color: '#64748b' }}>
+                      &#x1F4DE; {ghlImportData.clientBrief.stakeholders[0].phone}
+                    </div>
+                  )}
+                  {ghlImportData.clientBrief.location && (
+                    <div style={{ color: '#64748b' }}>
+                      &#x1F4CD; {ghlImportData.clientBrief.location}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Transcript Upload Card */}
