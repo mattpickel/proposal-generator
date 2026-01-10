@@ -57,6 +57,11 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Root endpoint for Replit health checks
+app.get('/', (req, res) => {
+  res.json({ status: 'ok', service: 'proposal-generator-api' });
+});
+
 // Error handler
 app.use((err, req, res, next) => {
   console.error('Error:', err);
