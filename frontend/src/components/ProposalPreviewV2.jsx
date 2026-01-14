@@ -167,7 +167,7 @@ export function ProposalPreviewV2({
           display: flex;
           justify-content: space-between;
           align-items: center;
-          padding: 1rem 1.5rem;
+          padding: 1rem;
           border-bottom: 1px solid #e2e8f0;
           background: #f8fafc;
         }
@@ -187,7 +187,7 @@ export function ProposalPreviewV2({
         .preview-info {
           display: flex;
           gap: 1.5rem;
-          padding: 0.75rem 1.5rem;
+          padding: 0.75rem 1rem;
           background: #f1f5f9;
           font-size: 0.85rem;
           color: #64748b;
@@ -198,11 +198,10 @@ export function ProposalPreviewV2({
         .preview-content {
           flex: 1;
           overflow-y: auto;
-          padding: 1.5rem;
+          padding: 1rem;
         }
         .rendered-proposal {
-          max-width: 800px;
-          margin: 0 auto;
+          width: 100%;
         }
         .render-placeholder {
           text-align: center;

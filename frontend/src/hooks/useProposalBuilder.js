@@ -233,6 +233,7 @@ export function useProposalBuilder(apiKey, showToast) {
     isProcessing,
     currentProposal,
     clientBrief,
+    setClientBrief,
     suggestedServices,
     generationProgress,
     processTranscript,

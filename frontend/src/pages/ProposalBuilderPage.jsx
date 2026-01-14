@@ -78,25 +78,66 @@ export default function ProposalBuilderPage() {
 
         if (v2Proposal) {
           // V2 proposal found
-          setBusinessName(v2Proposal.cover?.forClientOrg || '');
-          setClientName(v2Proposal.cover?.forClientName || '');
-          setSelectedServices(v2Proposal.services?.map(s => s.serviceKey) || []);
+          console.log('V2 proposal found:', {
+            clientBriefId: v2Proposal.clientBriefId,
+            cover: v2Proposal.cover
+          });
 
-          // Load client brief if available
+          // Load client brief if available - do this FIRST to get correct values
+          let briefForNames = null;
           if (v2Proposal.clientBriefId && v2Proposal.clientBriefId !== 'manual_entry') {
             try {
               const brief = await api.database.clientBriefs.get(v2Proposal.clientBriefId);
+              console.log('Loaded client brief:', brief);
               if (brief) {
-                builder.clientBrief = brief;
+                builder.setClientBrief(brief);
+                briefForNames = brief;
+                // Restore GHL import data if this brief came from GHL
+                if (brief.ghlOpportunityId) {
+                  setGhlImportData({ clientBrief: brief });
+                }
               }
-            } catch {
-              // Client brief not found, that's ok
+            } catch (err) {
+              console.error('Failed to load client brief:', err);
             }
           }
 
+          // Use client brief values if available, fall back to cover block
+          if (briefForNames) {
+            setBusinessName(briefForNames.clientName || v2Proposal.cover?.forClientOrg || '');
+            setClientName(briefForNames.contactName || briefForNames.stakeholders?.[0]?.name || v2Proposal.cover?.forClientName || '');
+          } else {
+            setBusinessName(v2Proposal.cover?.forClientOrg || '');
+            setClientName(v2Proposal.cover?.forClientName || '');
+          }
+          setSelectedServices(v2Proposal.services?.map(s => s.serviceKey) || []);
+
           showToast('V2 Proposal loaded', 'success');
         } else {
-          // No V2 proposal, check for legacy proposal
+          // No V2 proposal, check for existing GHL-imported client brief
+          console.log('No V2 proposal found, checking for GHL brief with opportunityId:', opportunityId);
+          try {
+            const ghlBriefs = await api.database.clientBriefs.getByGhlOpportunityId(opportunityId);
+            console.log('GHL briefs query result:', ghlBriefs);
+            if (ghlBriefs && ghlBriefs.length > 0) {
+              const brief = ghlBriefs[0]; // Use most recent
+              console.log('Restoring GHL brief:', brief);
+              setBusinessName(brief.clientName || '');
+              setClientName(brief.contactName || brief.stakeholders?.[0]?.name || '');
+              setGhlImportData({ clientBrief: brief });
+              builder.setClientBrief(brief);
+              showToast('GHL client info restored', 'success');
+              setIsLoading(false);
+              return;
+            } else {
+              console.log('No GHL briefs found for this opportunity ID');
+            }
+          } catch (err) {
+            console.error('GHL brief lookup failed:', err);
+            // No GHL brief found, continue checking for legacy proposals
+          }
+
+          // Check for legacy proposal
           const existingArray = await api.database.proposals.getByOpportunityId(opportunityId);
           const existing = existingArray && existingArray.length > 0 ? existingArray[0] : null;
 
@@ -248,22 +289,38 @@ export default function ProposalBuilderPage() {
 
     setIsImportingFromGHL(true);
     try {
+      console.log('Importing from GHL, opportunityId:', opportunityId);
       const result = await api.ghl.importOpportunity(opportunityId);
+      console.log('GHL import result:', result);
 
       if (result.clientBrief) {
+        console.log('Saved client brief with ghlOpportunityId:', result.clientBrief.ghlOpportunityId);
         // Store the imported data
         setGhlImportData(result);
 
+        const newBusinessName = result.clientBrief.clientName || '';
+        const newClientName = result.clientBrief.contactName || result.clientBrief.stakeholders?.[0]?.name || '';
+
         // Populate form fields from the client brief
-        if (result.clientBrief.clientName) {
-          setBusinessName(result.clientBrief.clientName);
-        }
-        if (result.clientBrief.stakeholders?.[0]?.name) {
-          setClientName(result.clientBrief.stakeholders[0].name);
-        }
+        setBusinessName(newBusinessName);
+        setClientName(newClientName);
 
         // Set the client brief in the builder
-        builder.clientBrief = result.clientBrief;
+        builder.setClientBrief(result.clientBrief);
+
+        // If a V2 proposal exists, update its cover block with the GHL values
+        if (proposalV2.proposal?.id) {
+          try {
+            await proposalV2.updateCover(proposalV2.proposal.id, {
+              forClientOrg: newBusinessName,
+              forClientName: newClientName,
+              forClientEmail: result.clientBrief.contactEmail || null
+            });
+            console.log('Updated V2 proposal cover with GHL data');
+          } catch (err) {
+            console.error('Failed to update proposal cover:', err);
+          }
+        }
 
         showToast('Client info imported from GHL', 'success');
       }
@@ -448,7 +505,19 @@ export default function ProposalBuilderPage() {
                 </button>
                 {ghlImportData && (
                   <div className="info-box success" style={{ marginTop: '0.5rem', fontSize: '0.85rem' }}>
-                    Imported from GHL opportunity
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>Imported from GHL</span>
+                      {(ghlImportData.ghlLocationId || ghlImportData.clientBrief?.ghlLocationId) && ghlImportData.clientBrief?.ghlOpportunityId && (
+                        <a
+                          href={`https://app.gohighlevel.com/v2/location/${ghlImportData.ghlLocationId || ghlImportData.clientBrief.ghlLocationId}/opportunities/list/${ghlImportData.clientBrief.ghlOpportunityId}?tab=Opportunity+Details`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ color: '#2563eb', textDecoration: 'none', fontSize: '0.8rem' }}
+                        >
+                          View in GHL &#x2197;
+                        </a>
+                      )}
+                    </div>
                   </div>
                 )}
               </div>

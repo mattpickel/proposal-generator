@@ -54,9 +54,13 @@ router.post('/opportunities/:id/import', async (req, res, next) => {
     // Save to Firebase
     const savedBrief = await clientBriefs.create(briefData);
 
+    // Include location ID for constructing GHL link
+    const locationId = process.env.GHL_LOCATION_ID;
+
     res.status(201).json({
       clientBrief: savedBrief,
-      ghlData: { opportunity, contact }
+      ghlData: { opportunity, contact },
+      ghlLocationId: locationId
     });
   } catch (error) {
     if (error instanceof GHLError) {

@@ -140,7 +140,9 @@ export const clientBriefs = {
   get: (id) => get(COLLECTIONS.CLIENT_BRIEFS, id),
   getAll: () => getAll(COLLECTIONS.CLIENT_BRIEFS),
   update: (id, data) => update(COLLECTIONS.CLIENT_BRIEFS, id, data),
-  delete: (id) => remove(COLLECTIONS.CLIENT_BRIEFS, id)
+  delete: (id) => remove(COLLECTIONS.CLIENT_BRIEFS, id),
+  getByGhlOpportunityId: (ghlOpportunityId) =>
+    queryWhere(COLLECTIONS.CLIENT_BRIEFS, 'ghlOpportunityId', '==', ghlOpportunityId)
 };
 
 /**

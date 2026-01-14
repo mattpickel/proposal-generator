@@ -17,7 +17,63 @@ import {
 
 const router = express.Router();
 
-// Generic CRUD handlers
+// ============================================
+// SPECIAL ROUTES (must be defined BEFORE generic CRUD routes)
+// ============================================
+
+// Proposals special routes
+router.post('/proposals/with-id/:id', async (req, res, next) => {
+  try {
+    const item = await proposalInstances.createWithId(req.params.id, req.body);
+    res.status(201).json(item);
+  } catch (error) {
+    next(error);
+  }
+});
+
+router.get('/proposals/by-opportunity/:opportunityId', async (req, res, next) => {
+  try {
+    const item = await proposalInstances.getByOpportunityId(req.params.opportunityId);
+    res.json(item);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Client briefs special routes
+router.get('/client-briefs/by-ghl-opportunity/:opportunityId', async (req, res, next) => {
+  try {
+    const items = await clientBriefs.getByGhlOpportunityId(req.params.opportunityId);
+    res.json(items);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Sections special routes
+router.get('/sections/by-proposal/:proposalId', async (req, res, next) => {
+  try {
+    const items = await proposalSections.getByProposalInstance(req.params.proposalId);
+    res.json(items);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// Exemplars special routes
+router.get('/exemplars/by-section/:sectionId', async (req, res, next) => {
+  try {
+    const items = await sectionExemplars.getBySectionId(req.params.sectionId);
+    res.json(items);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// ============================================
+// GENERIC CRUD ROUTES
+// ============================================
+
 const createCRUDRoutes = (path, service) => {
   // Get all
   router.get(`/${path}`, async (req, res, next) => {
@@ -73,7 +129,7 @@ const createCRUDRoutes = (path, service) => {
   });
 };
 
-// Create routes for all collections
+// Create CRUD routes for all collections
 createCRUDRoutes('proposals', proposalInstances);
 createCRUDRoutes('client-briefs', clientBriefs);
 createCRUDRoutes('sections', proposalSections);
@@ -82,42 +138,5 @@ createCRUDRoutes('templates', proposalTemplates);
 createCRUDRoutes('styles', styleCards);
 createCRUDRoutes('services', serviceModules);
 createCRUDRoutes('exemplars', sectionExemplars);
-
-// Special routes
-router.post('/proposals/with-id/:id', async (req, res, next) => {
-  try {
-    const item = await proposalInstances.createWithId(req.params.id, req.body);
-    res.status(201).json(item);
-  } catch (error) {
-    next(error);
-  }
-});
-
-router.get('/proposals/by-opportunity/:opportunityId', async (req, res, next) => {
-  try {
-    const item = await proposalInstances.getByOpportunityId(req.params.opportunityId);
-    res.json(item);
-  } catch (error) {
-    next(error);
-  }
-});
-
-router.get('/sections/by-proposal/:proposalId', async (req, res, next) => {
-  try {
-    const items = await proposalSections.getByProposalInstance(req.params.proposalId);
-    res.json(items);
-  } catch (error) {
-    next(error);
-  }
-});
-
-router.get('/exemplars/by-section/:sectionId', async (req, res, next) => {
-  try {
-    const items = await sectionExemplars.getBySectionId(req.params.sectionId);
-    res.json(items);
-  } catch (error) {
-    next(error);
-  }
-});
 
 export default router;

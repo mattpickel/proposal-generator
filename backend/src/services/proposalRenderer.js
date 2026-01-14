@@ -249,21 +249,18 @@ function renderSignatures(signatures) {
  */
 function getProposalStyles() {
   return `
-    body {
+    .proposal-html-content {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
       line-height: 1.6;
       color: #1a1a1a;
-      max-width: 800px;
-      margin: 0 auto;
-      padding: 40px;
       font-size: 14px;
     }
-    h1 {
+    .proposal-html-content h1 {
       font-size: 1.75rem;
       margin-bottom: 0.5rem;
       color: #111;
     }
-    h2 {
+    .proposal-html-content h2 {
       font-size: 1.25rem;
       margin-top: 2rem;
       margin-bottom: 1rem;
@@ -273,91 +270,91 @@ function getProposalStyles() {
       letter-spacing: 0.5px;
       color: #333;
     }
-    h3 {
+    .proposal-html-content h3 {
       font-size: 1.1rem;
       margin-top: 1.5rem;
       color: #444;
     }
-    h4 {
+    .proposal-html-content h4 {
       font-size: 1rem;
       margin-top: 1rem;
       margin-bottom: 0.5rem;
       color: #555;
     }
-    p {
+    .proposal-html-content p {
       margin: 0.75rem 0;
     }
-    ul {
+    .proposal-html-content ul {
       margin: 0.5rem 0;
       padding-left: 1.5rem;
     }
-    li {
+    .proposal-html-content li {
       margin: 0.25rem 0;
     }
-    .proposal-cover {
+    .proposal-html-content .proposal-cover {
       margin-bottom: 2rem;
       padding-bottom: 1.5rem;
       border-bottom: 1px solid #ddd;
     }
-    .proposal-meta {
+    .proposal-html-content .proposal-meta {
       color: #666;
       margin-top: 1rem;
       font-size: 0.95rem;
     }
-    .proposal-meta > div {
+    .proposal-html-content .proposal-meta > div {
       margin: 0.25rem 0;
     }
-    .brand-name {
+    .proposal-html-content .brand-name {
       font-weight: 600;
       color: #333;
     }
-    .greeting {
+    .proposal-html-content .greeting {
       font-size: 1.05rem;
       margin-bottom: 0.5rem;
     }
-    .signoff {
+    .proposal-html-content .signoff {
       font-weight: 600;
       margin-top: 1.5rem;
     }
-    .service-title {
+    .proposal-html-content .service-title {
       color: #2563eb;
     }
-    .service-subsection {
+    .proposal-html-content .service-subsection {
       margin: 1rem 0;
     }
-    .service-outcome {
+    .proposal-html-content .service-outcome {
       font-style: italic;
       color: #555;
       margin-top: 1rem;
     }
-    .service-timeline {
+    .proposal-html-content .service-timeline {
       color: #666;
       font-size: 0.95rem;
     }
-    .service-investment {
+    .proposal-html-content .service-investment {
       margin-top: 1rem;
       padding: 0.75rem;
       background: #f5f5f5;
       border-radius: 4px;
       border-left: 3px solid #2563eb;
     }
-    .placeholder {
+    .proposal-html-content .placeholder {
       background: #fef3c7;
       padding: 1rem;
       border-radius: 4px;
       margin: 1.5rem 0;
     }
-    .placeholder-text {
+    .proposal-html-content .placeholder-text {
       color: #92400e;
       font-style: italic;
     }
-    .terms-clause {
+    .proposal-html-content .terms-clause {
       margin: 1rem 0;
     }
-    .terms-clause h4 {
+    .proposal-html-content .terms-clause h4 {
       margin-bottom: 0.25rem;
     }
-    .proposal-terms {
+    .proposal-html-content .proposal-terms {
       margin-top: 2rem;
       padding-top: 1rem;
       border-top: 1px solid #ddd;
@@ -384,6 +381,7 @@ export function renderProposalToHtml(proposal) {
   <style>${getProposalStyles()}</style>
 </head>
 <body>
+<div class="proposal-html-content">
 ${renderCover(proposal.cover)}
 ${renderComments(proposal.comments)}
 ${renderServices(proposal.services)}
@@ -391,6 +389,7 @@ ${renderModules(proposal.modules)}
 ${renderItemized(proposal.itemized)}
 ${renderTerms(proposal.terms)}
 ${renderSignatures(proposal.signatures)}
+</div>
 </body>
 </html>`;
 
@@ -519,7 +518,7 @@ export function renderProposalToPlainText(proposal) {
  * @returns {string} HTML body content only
  */
 export function renderProposalBodyHtml(proposal) {
-  return `
+  return `<div class="proposal-html-content">
 ${renderCover(proposal.cover)}
 ${renderComments(proposal.comments)}
 ${renderServices(proposal.services)}
@@ -527,5 +526,5 @@ ${renderModules(proposal.modules)}
 ${renderItemized(proposal.itemized)}
 ${renderTerms(proposal.terms)}
 ${renderSignatures(proposal.signatures)}
-  `.trim();
+</div>`.trim();
 }

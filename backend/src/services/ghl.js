@@ -159,6 +159,8 @@ export function toClientBrief(opportunity, contact) {
 
   const clientBrief = {
     clientName: contact?.companyName || opportunity.name || 'Unknown Company',
+    contactName: stakeholderName,
+    contactEmail: contact?.email || '',
     industry: contact?.tags?.join(', ') || '',
     size: '',
     location: contact?.city && contact?.state
@@ -180,6 +182,7 @@ export function toClientBrief(opportunity, contact) {
     notesForCopy: '',
     ghlOpportunityId: opportunity.id,
     ghlContactId: contact?.id || null,
+    ghlLocationId: process.env.GHL_LOCATION_ID || null,
     opportunityName: opportunity.name || '',
     opportunityValue: opportunity.monetaryValue || 0,
     opportunityStage: opportunity.pipelineStageName || opportunity.status || ''

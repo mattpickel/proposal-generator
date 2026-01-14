@@ -63,6 +63,7 @@ class APIClient {
       create: (data) => this.request('/database/client-briefs', { method: 'POST', body: data }),
       update: (id, data) => this.request(`/database/client-briefs/${id}`, { method: 'PUT', body: data }),
       delete: (id) => this.request(`/database/client-briefs/${id}`, { method: 'DELETE' }),
+      getByGhlOpportunityId: (opportunityId) => this.request(`/database/client-briefs/by-ghl-opportunity/${opportunityId}`),
     },
 
     // Sections
