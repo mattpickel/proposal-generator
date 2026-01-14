@@ -141,8 +141,10 @@ function renderService(service) {
     ? `<p class="service-outcome">${escapeHtml(service.outcome)}</p>`
     : '';
 
-  const investmentHtml = service.investment?.renderHint
-    ? `<div class="service-investment"><strong>Investment:</strong> ${escapeHtml(service.investment.renderHint)}</div>`
+  // Use investment override if available, otherwise use default
+  const investmentDisplay = service.overrides?.investment_renderHint || service.investment?.renderHint;
+  const investmentHtml = investmentDisplay
+    ? `<div class="service-investment"><strong>Investment:</strong> ${escapeHtml(investmentDisplay)}</div>`
     : '';
 
   const timelineHtml = service.timeline
@@ -211,17 +213,28 @@ function renderItemized(itemized) {
  * @returns {string} HTML output
  */
 function renderTerms(terms) {
+  const introHtml = terms.introText
+    ? `<p class="terms-intro">${escapeHtml(terms.introText)}</p>`
+    : '';
+
   const clausesHtml = terms.clauses
-    .map(clause => `
+    .map(clause => {
+      // Handle multi-paragraph clauses (split on double newlines)
+      const bodyParagraphs = clause.body.split('\n\n')
+        .map(p => `<p>${escapeHtml(p)}</p>`)
+        .join('\n    ');
+      return `
   <div class="terms-clause">
     <h4>${clause.number}. ${clause.title ? escapeHtml(clause.title) : ''}</h4>
-    <p>${escapeHtml(clause.body)}</p>
-  </div>`)
+    ${bodyParagraphs}
+  </div>`;
+    })
     .join('\n');
 
   return `
 <section class="proposal-terms">
   <h2>${escapeHtml(terms.titleCaps)}</h2>
+  ${introHtml}
   ${clausesHtml}
 </section>`;
 }
@@ -248,38 +261,58 @@ function renderSignatures(signatures) {
  * @returns {string} CSS styles
  */
 function getProposalStyles() {
+  // Brand colors
+  const primary = '#eb372a';      // Red - for titles
+  const primaryDark = '#c32218';  // Darker red
+  const accent = '#c0a367';       // Gold - for accents
+  const accentLight = '#d4b87f';  // Light gold
+  const text = '#1A1A1A';         // Main text
+  const textSecondary = '#595959'; // Secondary text
+  const border = '#E0E0DD';       // Border color
+  const bg = '#FAFAF8';           // Background
+
   return `
+    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
+
     .proposal-html-content {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      font-family: 'Poppins', system-ui, -apple-system, sans-serif;
       line-height: 1.6;
-      color: #1a1a1a;
+      color: ${text};
       font-size: 14px;
     }
     .proposal-html-content h1 {
+      font-family: 'Poppins', system-ui, sans-serif;
       font-size: 1.75rem;
       margin-bottom: 0.5rem;
-      color: #111;
+      color: ${primary};
+      font-weight: 700;
     }
     .proposal-html-content h2 {
+      font-family: 'Poppins', system-ui, sans-serif;
       font-size: 1.25rem;
       margin-top: 2rem;
       margin-bottom: 1rem;
-      border-bottom: 2px solid #e5e5e5;
+      border-bottom: 2px solid ${accent};
       padding-bottom: 0.5rem;
       text-transform: uppercase;
       letter-spacing: 0.5px;
-      color: #333;
+      color: ${primary};
+      font-weight: 600;
     }
     .proposal-html-content h3 {
+      font-family: 'Poppins', system-ui, sans-serif;
       font-size: 1.1rem;
       margin-top: 1.5rem;
-      color: #444;
+      color: ${primary};
+      font-weight: 600;
     }
     .proposal-html-content h4 {
+      font-family: 'Poppins', system-ui, sans-serif;
       font-size: 1rem;
       margin-top: 1rem;
       margin-bottom: 0.5rem;
-      color: #555;
+      color: ${text};
+      font-weight: 600;
     }
     .proposal-html-content p {
       margin: 0.75rem 0;
@@ -294,10 +327,13 @@ function getProposalStyles() {
     .proposal-html-content .proposal-cover {
       margin-bottom: 2rem;
       padding-bottom: 1.5rem;
-      border-bottom: 1px solid #ddd;
+      border-bottom: 2px solid ${accent};
+    }
+    .proposal-html-content .proposal-title {
+      color: ${primary};
     }
     .proposal-html-content .proposal-meta {
-      color: #666;
+      color: ${textSecondary};
       margin-top: 1rem;
       font-size: 0.95rem;
     }
@@ -305,8 +341,9 @@ function getProposalStyles() {
       margin: 0.25rem 0;
     }
     .proposal-html-content .brand-name {
+      font-family: 'Poppins', system-ui, sans-serif;
       font-weight: 600;
-      color: #333;
+      color: ${primary};
     }
     .proposal-html-content .greeting {
       font-size: 1.05rem;
@@ -315,28 +352,29 @@ function getProposalStyles() {
     .proposal-html-content .signoff {
       font-weight: 600;
       margin-top: 1.5rem;
+      color: ${text};
     }
     .proposal-html-content .service-title {
-      color: #2563eb;
+      color: ${primary};
     }
     .proposal-html-content .service-subsection {
       margin: 1rem 0;
     }
     .proposal-html-content .service-outcome {
       font-style: italic;
-      color: #555;
+      color: ${textSecondary};
       margin-top: 1rem;
     }
     .proposal-html-content .service-timeline {
-      color: #666;
+      color: ${textSecondary};
       font-size: 0.95rem;
     }
     .proposal-html-content .service-investment {
       margin-top: 1rem;
       padding: 0.75rem;
-      background: #f5f5f5;
+      background: ${bg};
       border-radius: 4px;
-      border-left: 3px solid #2563eb;
+      border-left: 3px solid ${accent};
     }
     .proposal-html-content .placeholder {
       background: #fef3c7;
@@ -348,6 +386,11 @@ function getProposalStyles() {
       color: #92400e;
       font-style: italic;
     }
+    .proposal-html-content .terms-intro {
+      font-style: italic;
+      margin-bottom: 1.5rem;
+      color: ${textSecondary};
+    }
     .proposal-html-content .terms-clause {
       margin: 1rem 0;
     }
@@ -357,7 +400,7 @@ function getProposalStyles() {
     .proposal-html-content .proposal-terms {
       margin-top: 2rem;
       padding-top: 1rem;
-      border-top: 1px solid #ddd;
+      border-top: 2px solid ${accent};
     }
   `;
 }
@@ -459,8 +502,9 @@ export function renderProposalToPlainText(proposal) {
       lines.push('');
     }
 
-    if (service.investment?.renderHint) {
-      lines.push(`Investment: ${service.investment.renderHint}`);
+    const investmentDisplay = service.overrides?.investment_renderHint || service.investment?.renderHint;
+    if (investmentDisplay) {
+      lines.push(`Investment: ${investmentDisplay}`);
       lines.push('');
     }
 
@@ -493,6 +537,10 @@ export function renderProposalToPlainText(proposal) {
   // Terms
   lines.push(proposal.terms.titleCaps);
   lines.push('');
+  if (proposal.terms.introText) {
+    lines.push(proposal.terms.introText);
+    lines.push('');
+  }
   proposal.terms.clauses.forEach(clause => {
     lines.push(`${clause.number}. ${clause.title || ''}`);
     lines.push(clause.body);

@@ -120,7 +120,8 @@
 /**
  * @typedef {Object} TermsBlock
  * Purchase terms section - fixed content
- * @property {string} titleCaps - ALL CAPS section title (e.g., "CONSULTING AGREEMENT")
+ * @property {string} titleCaps - ALL CAPS section title (e.g., "PURCHASE TERMS")
+ * @property {string} [introText] - Optional introductory paragraph before clauses
  * @property {Clause[]} clauses - Array of terms clauses
  */
 

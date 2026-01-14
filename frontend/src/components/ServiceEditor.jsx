@@ -25,6 +25,8 @@ export function ServiceEditor({
   const [refiningSubsection, setRefiningSubsection] = useState(null);
   const [refineInstructions, setRefineInstructions] = useState('');
   const [isRefining, setIsRefining] = useState(false);
+  const [editingInvestment, setEditingInvestment] = useState(false);
+  const [investmentValue, setInvestmentValue] = useState('');
 
   const handleEditClick = (subsection) => {
     const currentValue = service.overrides?.[`subsection_${subsection.number}`] || subsection.bodyMarkdown;
@@ -86,6 +88,36 @@ export function ServiceEditor({
     setRefineInstructions('');
   };
 
+  const handleEditInvestment = () => {
+    const currentValue = service.overrides?.investment_renderHint || service.investment?.renderHint || '';
+    setInvestmentValue(currentValue);
+    setEditingInvestment(true);
+  };
+
+  const handleSaveInvestment = () => {
+    onUpdateOverrides({ investment_renderHint: investmentValue });
+    setEditingInvestment(false);
+    setInvestmentValue('');
+  };
+
+  const handleCancelInvestment = () => {
+    setEditingInvestment(false);
+    setInvestmentValue('');
+  };
+
+  const handleResetInvestment = () => {
+    // Remove the override to revert to original
+    onUpdateOverrides({ investment_renderHint: service.investment?.renderHint || '' });
+  };
+
+  // Get the display value for investment (override or original)
+  const getInvestmentDisplay = () => {
+    return service.overrides?.investment_renderHint || service.investment?.renderHint || '';
+  };
+
+  const hasInvestmentOverride = service.overrides?.investment_renderHint &&
+    service.overrides.investment_renderHint !== service.investment?.renderHint;
+
   return (
     <div className={`service-editor ${service.enabled ? '' : 'disabled'}`}>
       <div className="service-header">
@@ -111,7 +143,59 @@ export function ServiceEditor({
 
       {service.enabled && (
         <div className="service-summary">
-          <span className="service-investment">{service.investment?.renderHint || ''}</span>
+          {editingInvestment ? (
+            <div className="investment-edit">
+              <input
+                type="text"
+                value={investmentValue}
+                onChange={(e) => setInvestmentValue(e.target.value)}
+                className="text-input investment-input"
+                placeholder="e.g., $5,000 one-time investment"
+                disabled={isLoading}
+              />
+              <div className="investment-actions">
+                <button
+                  className="btn btn-primary btn-sm"
+                  onClick={handleSaveInvestment}
+                  disabled={isLoading}
+                >
+                  Save
+                </button>
+                <button
+                  className="btn btn-secondary btn-sm"
+                  onClick={handleCancelInvestment}
+                  disabled={isLoading}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="investment-display">
+              <span className="service-investment">
+                {getInvestmentDisplay()}
+                {hasInvestmentOverride && <span className="override-badge">Modified</span>}
+              </span>
+              <div className="investment-actions">
+                <button
+                  className="btn btn-sm"
+                  onClick={handleEditInvestment}
+                  disabled={isLoading || isRefining}
+                >
+                  Edit Price
+                </button>
+                {hasInvestmentOverride && (
+                  <button
+                    className="btn btn-sm"
+                    onClick={handleResetInvestment}
+                    disabled={isLoading || isRefining}
+                  >
+                    Reset
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
           {service.timeline && (
             <span className="service-timeline">{service.timeline}</span>
           )}
@@ -302,6 +386,39 @@ export function ServiceEditor({
         .service-investment {
           font-weight: 500;
           color: #059669;
+          display: flex;
+          align-items: center;
+          gap: 0.5rem;
+        }
+        .investment-display {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+        }
+        .investment-actions {
+          display: flex;
+          gap: 0.25rem;
+        }
+        .investment-edit {
+          display: flex;
+          flex-direction: column;
+          gap: 0.5rem;
+          flex: 1;
+        }
+        .investment-input {
+          padding: 0.5rem 0.75rem;
+          border: 1px solid #d1d5db;
+          border-radius: 6px;
+          font-size: 0.9rem;
+          color: #059669;
+          font-weight: 500;
+          width: 100%;
+          max-width: 300px;
+        }
+        .investment-input:focus {
+          outline: none;
+          border-color: #059669;
+          box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.2);
         }
         .service-content {
           margin-top: 1rem;
