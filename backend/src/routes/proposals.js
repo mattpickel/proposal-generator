@@ -385,4 +385,86 @@ router.delete('/v2/:id', async (req, res, next) => {
   }
 });
 
+/**
+ * POST /api/proposals/v2/refine-content
+ * Refine content with AI based on user instructions
+ */
+router.post('/v2/refine-content', async (req, res, next) => {
+  try {
+    const { apiKey, currentContent, instructions, context } = req.body;
+
+    if (!apiKey || !currentContent || !instructions) {
+      return res.status(400).json({
+        error: 'Missing required parameters: apiKey, currentContent, instructions'
+      });
+    }
+
+    log.info('ProposalsRoute', 'Refining content with AI', {
+      contentLength: currentContent.length,
+      instructionsLength: instructions.length
+    });
+
+    const response = await fetch('https://api.openai.com/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        model: 'gpt-4o-mini',
+        messages: [
+          {
+            role: 'system',
+            content: `You are helping refine marketing proposal content. Your task is to modify the given content based on the user's instructions while maintaining professional quality and the existing structure/format.
+
+Rules:
+- Keep the same general format (markdown, bullet points, etc.) unless asked to change it
+- Preserve any key information unless specifically asked to remove it
+- Make targeted changes based on the instructions
+- Output ONLY the refined content, no explanations or commentary
+${context ? `\nContext: ${context}` : ''}`
+          },
+          {
+            role: 'user',
+            content: `CURRENT CONTENT:
+${currentContent}
+
+INSTRUCTIONS FOR REFINEMENT:
+${instructions}
+
+Please provide the refined content:`
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 2000
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.error?.message || 'OpenAI API error');
+    }
+
+    const data = await response.json();
+    const refinedContent = data.choices[0]?.message?.content?.trim();
+
+    if (!refinedContent) {
+      throw new Error('No content returned from AI');
+    }
+
+    log.info('ProposalsRoute', 'Content refined', {
+      originalLength: currentContent.length,
+      refinedLength: refinedContent.length,
+      tokens: data.usage?.total_tokens
+    });
+
+    res.json({
+      refinedContent,
+      tokens: data.usage?.total_tokens
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default router;

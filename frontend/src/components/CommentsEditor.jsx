@@ -101,11 +101,11 @@ export function CommentsEditor({
                 Edit
               </button>
               <button
-                className="btn btn-secondary btn-sm"
+                className="btn btn-sm btn-ai"
                 onClick={() => setShowRegenerateForm(!showRegenerateForm)}
                 disabled={isLoading}
               >
-                Regenerate
+                Refine with AI
               </button>
             </>
           ) : (
@@ -206,8 +206,8 @@ export function CommentsEditor({
       )}
 
       {showRegenerateForm && !isEditing && (
-        <div className="regenerate-section" style={{ marginTop: '1rem', padding: '1rem', background: '#f8fafc', borderRadius: '8px' }}>
-          <h4 style={{ marginBottom: '0.5rem', fontSize: '0.95rem' }}>Regenerate with Feedback</h4>
+        <div className="refine-section" style={{ marginTop: '1rem', padding: '1rem', background: '#f5f3ff', borderRadius: '8px', border: '1px solid #ddd6fe' }}>
+          <h4 style={{ marginBottom: '0.5rem', fontSize: '0.95rem' }}>Refine with AI</h4>
           <p style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '0.75rem' }}>
             Describe what you&apos;d like to change or improve in the comments.
           </p>
@@ -220,6 +220,7 @@ export function CommentsEditor({
               rows={3}
               className="text-area"
               disabled={isLoading}
+              style={{ borderColor: '#c4b5fd' }}
             />
             <VoiceMemoButton
               onTranscript={(text) => setFeedback(prev => prev ? `${prev} ${text}` : text)}
@@ -233,7 +234,7 @@ export function CommentsEditor({
               onClick={handleRegenerate}
               disabled={!feedback.trim() || isLoading}
             >
-              {isLoading ? 'Regenerating...' : 'Regenerate'}
+              {isLoading ? 'Refining...' : 'Apply'}
             </button>
             <button
               className="btn btn-secondary btn-sm"
@@ -296,6 +297,17 @@ export function CommentsEditor({
           margin-bottom: 0.25rem;
           color: #374151;
           font-size: 0.9rem;
+        }
+        .btn-ai {
+          background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%);
+          color: white;
+          border: none;
+        }
+        .btn-ai:hover:not(:disabled) {
+          background: linear-gradient(135deg, #7c3aed 0%, #4f46e5 100%);
+        }
+        .btn-ai:disabled {
+          opacity: 0.6;
         }
       `}</style>
     </div>

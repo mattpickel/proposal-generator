@@ -853,6 +853,7 @@ export default function ProposalBuilderPage() {
                         onToggle={(enabled) => handleToggleService(service.serviceKey, enabled)}
                         onUpdateOverrides={(overrides) => handleUpdateServiceOverrides(service.serviceKey, overrides)}
                         isLoading={proposalV2.isLoading}
+                        apiKey={apiKey}
                       />
                     ))}
                   </div>

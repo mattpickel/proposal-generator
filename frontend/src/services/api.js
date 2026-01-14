@@ -233,6 +233,13 @@ class APIClient {
     // Delete proposal
     delete: (id) =>
       this.request(`/proposals/v2/${id}`, { method: 'DELETE' }),
+
+    // Refine content with AI
+    refineContent: (data) =>
+      this.request('/proposals/v2/refine-content', {
+        method: 'POST',
+        body: data,
+      }),
   };
 
   // GoHighLevel integration
