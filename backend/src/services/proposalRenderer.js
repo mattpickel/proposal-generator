@@ -12,6 +12,65 @@
 
 import { log } from '../utils/logger.js';
 
+// =============================================================================
+// INLINE STYLES (for rich text editor compatibility)
+// =============================================================================
+
+// Brand colors
+const colors = {
+  primary: '#eb372a',      // Red - for titles
+  primaryDark: '#c32218',  // Darker red
+  accent: '#c0a367',       // Gold - for accents
+  accentLight: '#d4b87f',  // Light gold
+  text: '#1A1A1A',         // Main text
+  textSecondary: '#595959', // Secondary text
+  border: '#E0E0DD',       // Border color
+  bg: '#FAFAF8',           // Background
+};
+
+// Inline styles as objects (converted to strings when needed)
+const styles = {
+  // Base content wrapper
+  content: `font-family: 'Poppins', system-ui, -apple-system, sans-serif; line-height: 1.6; color: ${colors.text}; font-size: 14px;`,
+
+  // Headings
+  h1: `font-family: 'Poppins', system-ui, sans-serif; font-size: 1.75rem; margin-bottom: 0.5rem; color: ${colors.primary}; font-weight: 700;`,
+  h2: `font-family: 'Poppins', system-ui, sans-serif; font-size: 1.25rem; margin-top: 2rem; margin-bottom: 1rem; border-bottom: 2px solid ${colors.accent}; padding-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.5px; color: ${colors.primary}; font-weight: 600;`,
+  h3: `font-family: 'Poppins', system-ui, sans-serif; font-size: 1.1rem; margin-top: 1.5rem; color: ${colors.primary}; font-weight: 600;`,
+  h4: `font-family: 'Poppins', system-ui, sans-serif; font-size: 1rem; margin-top: 1rem; margin-bottom: 0.5rem; color: ${colors.text}; font-weight: 600;`,
+
+  // Paragraphs and text
+  p: `margin: 0.75rem 0;`,
+  ul: `margin: 0.5rem 0; padding-left: 1.5rem;`,
+  li: `margin: 0.25rem 0;`,
+
+  // Cover section
+  cover: `margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 2px solid ${colors.accent};`,
+  meta: `color: ${colors.textSecondary}; margin-top: 1rem; font-size: 0.95rem;`,
+  metaItem: `margin: 0.25rem 0;`,
+  brandName: `font-family: 'Poppins', system-ui, sans-serif; font-weight: 600; color: ${colors.primary};`,
+
+  // Comments section
+  greeting: `font-size: 1.05rem; margin-bottom: 0.5rem;`,
+  signoff: `font-weight: 600; margin-top: 1.5rem; color: ${colors.text};`,
+
+  // Service section
+  serviceSubsection: `margin: 1rem 0;`,
+  serviceOutcome: `font-style: italic; color: ${colors.textSecondary}; margin-top: 1rem;`,
+  serviceTimeline: `color: ${colors.textSecondary}; font-size: 0.95rem;`,
+  serviceInvestment: `margin-top: 1rem; padding: 0.75rem; background: ${colors.bg}; border-radius: 4px; border-left: 3px solid ${colors.accent};`,
+
+  // Placeholder
+  placeholder: `background: #fef3c7; padding: 1rem; border-radius: 4px; margin: 1.5rem 0;`,
+  placeholderText: `color: #92400e; font-style: italic;`,
+
+  // Terms section
+  termsIntro: `font-style: italic; margin-bottom: 1.5rem; color: ${colors.textSecondary};`,
+  termsClause: `margin: 1rem 0;`,
+  termsClauseH4: `font-family: 'Poppins', system-ui, sans-serif; font-size: 1rem; margin-top: 1rem; margin-bottom: 0.25rem; color: ${colors.text}; font-weight: 600;`,
+  termsSection: `margin-top: 2rem; padding-top: 1rem; border-top: 2px solid ${colors.accent};`,
+};
+
 /**
  * Escape HTML special characters
  * @param {string} text - Text to escape
@@ -28,7 +87,7 @@ function escapeHtml(text) {
 }
 
 /**
- * Parse restricted markdown to HTML
+ * Parse restricted markdown to HTML with inline styles
  * Only allows: bold, italic, unordered lists
  * @param {string} markdown - Markdown text
  * @returns {string} HTML output
@@ -52,17 +111,17 @@ function parseRestrictedMarkdown(markdown) {
 
     if (trimmedLine.startsWith('- ')) {
       if (!inList) {
-        processedLines.push('<ul>');
+        processedLines.push(`<ul style="${styles.ul}">`);
         inList = true;
       }
-      processedLines.push(`<li>${escapeHtml(trimmedLine.substring(2))}</li>`);
+      processedLines.push(`<li style="${styles.li}">${escapeHtml(trimmedLine.substring(2))}</li>`);
     } else {
       if (inList) {
         processedLines.push('</ul>');
         inList = false;
       }
       if (trimmedLine) {
-        processedLines.push(`<p>${escapeHtml(trimmedLine)}</p>`);
+        processedLines.push(`<p style="${styles.p}">${escapeHtml(trimmedLine)}</p>`);
       }
     }
   }
@@ -75,21 +134,21 @@ function parseRestrictedMarkdown(markdown) {
 }
 
 /**
- * Render cover block to HTML
+ * Render cover block to HTML with inline styles
  * @param {import('../models/proposalSchema.js').CoverBlock} cover - Cover block
  * @returns {string} HTML output
  */
 function renderCover(cover) {
   return `
-<header class="proposal-cover">
-  <h1 class="proposal-title">${escapeHtml(cover.proposalTitle)}</h1>
-  <div class="proposal-meta">
-    <div class="brand-name">${escapeHtml(cover.brandName)}</div>
-    <div class="prepared-by">
+<header style="${styles.cover}">
+  <h1 style="${styles.h1}">${escapeHtml(cover.proposalTitle)}</h1>
+  <div style="${styles.meta}">
+    <div style="${styles.brandName}">${escapeHtml(cover.brandName)}</div>
+    <div style="${styles.metaItem}">
       Prepared by ${escapeHtml(cover.preparedByName)}, ${escapeHtml(cover.preparedByTitle)}
     </div>
-    <div class="date">Date: ${escapeHtml(cover.quoteCreatedDate)}</div>
-    <div class="for-client">
+    <div style="${styles.metaItem}">Date: ${escapeHtml(cover.quoteCreatedDate)}</div>
+    <div style="${styles.metaItem}">
       <div>For: ${escapeHtml(cover.forClientName)}</div>
       <div>${escapeHtml(cover.forClientOrg)}</div>
       ${cover.forClientEmail ? `<div>${escapeHtml(cover.forClientEmail)}</div>` : ''}
@@ -99,26 +158,26 @@ function renderCover(cover) {
 }
 
 /**
- * Render comments block to HTML
+ * Render comments block to HTML with inline styles
  * @param {import('../models/proposalSchema.js').CommentsBlock} comments - Comments block
  * @returns {string} HTML output
  */
 function renderComments(comments) {
   const paragraphsHtml = comments.paragraphs
-    .map(p => `<p>${escapeHtml(p)}</p>`)
+    .map(p => `<p style="${styles.p}">${escapeHtml(p)}</p>`)
     .join('\n    ');
 
   return `
-<section class="proposal-comments">
-  <h2>${escapeHtml(comments.heading)}</h2>
-  <p class="greeting">${escapeHtml(comments.greetingLine)}</p>
+<section>
+  <h2 style="${styles.h2}">${escapeHtml(comments.heading)}</h2>
+  <p style="${styles.greeting}">${escapeHtml(comments.greetingLine)}</p>
   ${paragraphsHtml}
-  <p class="signoff">${escapeHtml(comments.signoff)}</p>
+  <p style="${styles.signoff}">${escapeHtml(comments.signoff)}</p>
 </section>`;
 }
 
 /**
- * Render single service block to HTML
+ * Render single service block to HTML with inline styles
  * @param {import('../models/proposalSchema.js').ServiceBlock} service - Service block
  * @returns {string} HTML output
  */
@@ -130,30 +189,30 @@ function renderService(service) {
       // Use override if available, otherwise use default
       const body = service.overrides?.[`subsection_${sub.number}`] || sub.bodyMarkdown;
       return `
-  <div class="service-subsection">
-    <h4>${sub.number}. ${escapeHtml(sub.title)}</h4>
+  <div style="${styles.serviceSubsection}">
+    <h4 style="${styles.h4}">${sub.number}. ${escapeHtml(sub.title)}</h4>
     ${parseRestrictedMarkdown(body)}
   </div>`;
     })
     .join('\n');
 
   const outcomeHtml = service.outcome
-    ? `<p class="service-outcome">${escapeHtml(service.outcome)}</p>`
+    ? `<p style="${styles.serviceOutcome}">${escapeHtml(service.outcome)}</p>`
     : '';
 
   // Use investment override if available, otherwise use default
   const investmentDisplay = service.overrides?.investment_renderHint || service.investment?.renderHint;
   const investmentHtml = investmentDisplay
-    ? `<div class="service-investment"><strong>Investment:</strong> ${escapeHtml(investmentDisplay)}</div>`
+    ? `<div style="${styles.serviceInvestment}"><strong>Investment:</strong> ${escapeHtml(investmentDisplay)}</div>`
     : '';
 
   const timelineHtml = service.timeline
-    ? `<p class="service-timeline"><strong>Timeline:</strong> ${escapeHtml(service.timeline)}</p>`
+    ? `<p style="${styles.serviceTimeline}"><strong>Timeline:</strong> ${escapeHtml(service.timeline)}</p>`
     : '';
 
   return `
-<section class="proposal-service">
-  <h2 class="service-title">${escapeHtml(service.displayNameCaps)}</h2>
+<section>
+  <h2 style="${styles.h2}">${escapeHtml(service.displayNameCaps)}</h2>
   ${subsectionsHtml}
   ${outcomeHtml}
   ${timelineHtml}
@@ -174,7 +233,7 @@ function renderServices(services) {
 }
 
 /**
- * Render optional modules to HTML
+ * Render optional modules to HTML with inline styles
  * @param {import('../models/proposalSchema.js').ModuleBlock[]} modules - Module blocks
  * @returns {string} HTML output
  */
@@ -182,24 +241,24 @@ function renderModules(modules) {
   return modules
     .filter(m => m.enabled)
     .map(module => `
-<section class="proposal-module">
-  ${module.titleCaps ? `<h2>${escapeHtml(module.titleCaps)}</h2>` : ''}
+<section>
+  ${module.titleCaps ? `<h2 style="${styles.h2}">${escapeHtml(module.titleCaps)}</h2>` : ''}
   ${parseRestrictedMarkdown(module.bodyMarkdown)}
 </section>`)
     .join('\n');
 }
 
 /**
- * Render itemized block to HTML
+ * Render itemized block to HTML with inline styles
  * @param {import('../models/proposalSchema.js').ItemizedBlock} itemized - Itemized block
  * @returns {string} HTML output
  */
 function renderItemized(itemized) {
   if (itemized.source === 'placeholder') {
     return `
-<section class="proposal-itemized placeholder">
-  <h2>PRODUCTS & SERVICES</h2>
-  <p class="placeholder-text">${escapeHtml(itemized.placeholderText)}</p>
+<section style="${styles.placeholder}">
+  <h2 style="${styles.h2}">PRODUCTS & SERVICES</h2>
+  <p style="${styles.placeholderText}">${escapeHtml(itemized.placeholderText)}</p>
 </section>`;
   }
 
@@ -208,48 +267,48 @@ function renderItemized(itemized) {
 }
 
 /**
- * Render terms block to HTML
+ * Render terms block to HTML with inline styles
  * @param {import('../models/proposalSchema.js').TermsBlock} terms - Terms block
  * @returns {string} HTML output
  */
 function renderTerms(terms) {
   const introHtml = terms.introText
-    ? `<p class="terms-intro">${escapeHtml(terms.introText)}</p>`
+    ? `<p style="${styles.termsIntro}">${escapeHtml(terms.introText)}</p>`
     : '';
 
   const clausesHtml = terms.clauses
     .map(clause => {
       // Handle multi-paragraph clauses (split on double newlines)
       const bodyParagraphs = clause.body.split('\n\n')
-        .map(p => `<p>${escapeHtml(p)}</p>`)
+        .map(p => `<p style="${styles.p}">${escapeHtml(p)}</p>`)
         .join('\n    ');
       return `
-  <div class="terms-clause">
-    <h4>${clause.number}. ${clause.title ? escapeHtml(clause.title) : ''}</h4>
+  <div style="${styles.termsClause}">
+    <h4 style="${styles.termsClauseH4}">${clause.number}. ${clause.title ? escapeHtml(clause.title) : ''}</h4>
     ${bodyParagraphs}
   </div>`;
     })
     .join('\n');
 
   return `
-<section class="proposal-terms">
-  <h2>${escapeHtml(terms.titleCaps)}</h2>
+<section style="${styles.termsSection}">
+  <h2 style="${styles.h2}">${escapeHtml(terms.titleCaps)}</h2>
   ${introHtml}
   ${clausesHtml}
 </section>`;
 }
 
 /**
- * Render signatures block to HTML
+ * Render signatures block to HTML with inline styles
  * @param {import('../models/proposalSchema.js').SignatureBlock} signatures - Signatures block
  * @returns {string} HTML output
  */
 function renderSignatures(signatures) {
   if (signatures.source === 'placeholder') {
     return `
-<section class="proposal-signatures placeholder">
-  <h2>ACCEPTANCE</h2>
-  <p class="placeholder-text">${escapeHtml(signatures.placeholderText)}</p>
+<section style="${styles.placeholder}">
+  <h2 style="${styles.h2}">ACCEPTANCE</h2>
+  <p style="${styles.placeholderText}">${escapeHtml(signatures.placeholderText)}</p>
 </section>`;
   }
 
@@ -257,156 +316,8 @@ function renderSignatures(signatures) {
 }
 
 /**
- * Get CSS styles for the proposal
- * @returns {string} CSS styles
- */
-function getProposalStyles() {
-  // Brand colors
-  const primary = '#eb372a';      // Red - for titles
-  const primaryDark = '#c32218';  // Darker red
-  const accent = '#c0a367';       // Gold - for accents
-  const accentLight = '#d4b87f';  // Light gold
-  const text = '#1A1A1A';         // Main text
-  const textSecondary = '#595959'; // Secondary text
-  const border = '#E0E0DD';       // Border color
-  const bg = '#FAFAF8';           // Background
-
-  return `
-    @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap');
-
-    .proposal-html-content {
-      font-family: 'Poppins', system-ui, -apple-system, sans-serif;
-      line-height: 1.6;
-      color: ${text};
-      font-size: 14px;
-    }
-    .proposal-html-content h1 {
-      font-family: 'Poppins', system-ui, sans-serif;
-      font-size: 1.75rem;
-      margin-bottom: 0.5rem;
-      color: ${primary};
-      font-weight: 700;
-    }
-    .proposal-html-content h2 {
-      font-family: 'Poppins', system-ui, sans-serif;
-      font-size: 1.25rem;
-      margin-top: 2rem;
-      margin-bottom: 1rem;
-      border-bottom: 2px solid ${accent};
-      padding-bottom: 0.5rem;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: ${primary};
-      font-weight: 600;
-    }
-    .proposal-html-content h3 {
-      font-family: 'Poppins', system-ui, sans-serif;
-      font-size: 1.1rem;
-      margin-top: 1.5rem;
-      color: ${primary};
-      font-weight: 600;
-    }
-    .proposal-html-content h4 {
-      font-family: 'Poppins', system-ui, sans-serif;
-      font-size: 1rem;
-      margin-top: 1rem;
-      margin-bottom: 0.5rem;
-      color: ${text};
-      font-weight: 600;
-    }
-    .proposal-html-content p {
-      margin: 0.75rem 0;
-    }
-    .proposal-html-content ul {
-      margin: 0.5rem 0;
-      padding-left: 1.5rem;
-    }
-    .proposal-html-content li {
-      margin: 0.25rem 0;
-    }
-    .proposal-html-content .proposal-cover {
-      margin-bottom: 2rem;
-      padding-bottom: 1.5rem;
-      border-bottom: 2px solid ${accent};
-    }
-    .proposal-html-content .proposal-title {
-      color: ${primary};
-    }
-    .proposal-html-content .proposal-meta {
-      color: ${textSecondary};
-      margin-top: 1rem;
-      font-size: 0.95rem;
-    }
-    .proposal-html-content .proposal-meta > div {
-      margin: 0.25rem 0;
-    }
-    .proposal-html-content .brand-name {
-      font-family: 'Poppins', system-ui, sans-serif;
-      font-weight: 600;
-      color: ${primary};
-    }
-    .proposal-html-content .greeting {
-      font-size: 1.05rem;
-      margin-bottom: 0.5rem;
-    }
-    .proposal-html-content .signoff {
-      font-weight: 600;
-      margin-top: 1.5rem;
-      color: ${text};
-    }
-    .proposal-html-content .service-title {
-      color: ${primary};
-    }
-    .proposal-html-content .service-subsection {
-      margin: 1rem 0;
-    }
-    .proposal-html-content .service-outcome {
-      font-style: italic;
-      color: ${textSecondary};
-      margin-top: 1rem;
-    }
-    .proposal-html-content .service-timeline {
-      color: ${textSecondary};
-      font-size: 0.95rem;
-    }
-    .proposal-html-content .service-investment {
-      margin-top: 1rem;
-      padding: 0.75rem;
-      background: ${bg};
-      border-radius: 4px;
-      border-left: 3px solid ${accent};
-    }
-    .proposal-html-content .placeholder {
-      background: #fef3c7;
-      padding: 1rem;
-      border-radius: 4px;
-      margin: 1.5rem 0;
-    }
-    .proposal-html-content .placeholder-text {
-      color: #92400e;
-      font-style: italic;
-    }
-    .proposal-html-content .terms-intro {
-      font-style: italic;
-      margin-bottom: 1.5rem;
-      color: ${textSecondary};
-    }
-    .proposal-html-content .terms-clause {
-      margin: 1rem 0;
-    }
-    .proposal-html-content .terms-clause h4 {
-      margin-bottom: 0.25rem;
-    }
-    .proposal-html-content .proposal-terms {
-      margin-top: 2rem;
-      padding-top: 1rem;
-      border-top: 2px solid ${accent};
-    }
-  `;
-}
-
-/**
- * Render complete proposal to HTML
+ * Render complete proposal to HTML with inline styles
+ * All styles are inlined for rich text editor compatibility (GHL, etc.)
  * @param {import('../models/proposalSchema.js').Proposal} proposal - Proposal to render
  * @returns {string} Complete HTML document
  */
@@ -415,16 +326,16 @@ export function renderProposalToHtml(proposal) {
     proposalId: proposal.id
   });
 
+  // Note: No <style> tag - all styles are inline for rich text editor compatibility
   const html = `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${escapeHtml(proposal.cover.proposalTitle)}</title>
-  <style>${getProposalStyles()}</style>
 </head>
 <body>
-<div class="proposal-html-content">
+<div style="${styles.content}">
 ${renderCover(proposal.cover)}
 ${renderComments(proposal.comments)}
 ${renderServices(proposal.services)}
@@ -561,12 +472,13 @@ export function renderProposalToPlainText(proposal) {
 
 /**
  * Render proposal body only (without full HTML wrapper)
- * Useful for embedding in existing pages
+ * Useful for embedding in existing pages or pasting into editors
+ * All styles are inlined for rich text editor compatibility
  * @param {import('../models/proposalSchema.js').Proposal} proposal - Proposal to render
  * @returns {string} HTML body content only
  */
 export function renderProposalBodyHtml(proposal) {
-  return `<div class="proposal-html-content">
+  return `<div style="${styles.content}">
 ${renderCover(proposal.cover)}
 ${renderComments(proposal.comments)}
 ${renderServices(proposal.services)}
