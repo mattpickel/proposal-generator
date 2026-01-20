@@ -429,6 +429,218 @@ export const serviceContentTemplates = {
     },
 
     quoteDescription: "Strategic marketing leadership and team guidance including marketing strategy, budget planning, team management, campaign oversight, and monthly executive reporting (8-10 hours/month)."
+  },
+
+  good_start: {
+    serviceKey: 'good_start',
+    displayName: 'Good Start Program',
+
+    detailedDescription: {
+      intro: "The Good Start Program is a foundation package designed for new or early-stage businesses. We focus on the essentials—brand clarity, a professional website, and systems you can manage yourself—without overbuilding.",
+
+      deliverableGroups: [
+        {
+          groupTitle: "Brand Cleanup",
+          bullets: [
+            "Review your current logo and tweak for clarity and differentiation",
+            "Lock in basic colors and fonts",
+            "Set a simple voice and tone",
+            "Create brand consistency guidelines"
+          ]
+        },
+        {
+          groupTitle: "Website",
+          bullets: [
+            "Light multi-page site: Home, About, Services/Offerings, Contact",
+            "Clear call to action with phone, email, and contact form",
+            "Photo gallery for showcasing your work",
+            "Mobile-friendly responsive layout",
+            "Link existing social media accounts to the website"
+          ]
+        },
+        {
+          groupTitle: "Technical and SEO Setup",
+          bullets: [
+            "Domain and hosting setup",
+            "Guidance on email setup and routing",
+            "Basic SEO foundations including optimized page structure",
+            "On-page content optimization for search",
+            "Site built with clean structure for future search growth"
+          ]
+        },
+        {
+          groupTitle: "Website Training",
+          bullets: [
+            "How to update text and content",
+            "How to upload new photos",
+            "How to swap images seasonally or as needed",
+            "Basic maintenance and best practices"
+          ]
+        },
+        {
+          groupTitle: "Optional Add-Ons (if time remains)",
+          bullets: [
+            "WooCommerce setup for merchandise",
+            "Calendar or open dates display",
+            "Additional custom functionality as discussed"
+          ]
+        }
+      ],
+
+      timeline: "Typically completed over 3-4 weeks depending on content availability and feedback turnaround.",
+
+      outcome: "You'll have a professional, legitimate business presence that's ready to use and easy to maintain yourself."
+    },
+
+    investmentNarrative: {
+      structure: "hourly_capped",
+      totalPrice: 5000,
+      hourlyRate: 150,
+      estimatedHours: "30-35",
+      narrative: "**Good Start Program:** ~$5,000 estimated budget. Billed hourly at $150/hour with a working cap. Time is tracked against agreed priorities. If we hit the cap, we pause and check in before doing anything beyond it.",
+      paymentTerms: "$2,550 paid to get started (17 hours). Remaining balance due at completion or once the cap is reached.",
+      valueStatement: "This foundation package gets your business looking legitimate and ready to use without overbuilding or overspending."
+    },
+
+    quoteDescription: "Foundation package for new businesses including brand cleanup, professional multi-page website, domain/hosting/SEO setup, and training to manage it yourself. Hourly billing with capped budget."
+  },
+
+  good_ai_foundations: {
+    serviceKey: 'good_ai_foundations',
+    displayName: 'Good AI Foundations',
+
+    detailedDescription: {
+      intro: "Good AI Foundations is built on the four parts of the Good AI Framework—Standards, Skills, Systems, and Support—and gives your team clarity, safety, and direction before any development begins. This is designed for leaders who already use AI daily but need structured thinking, improved workflows, and a strategic development plan.",
+
+      deliverableGroups: [
+        {
+          groupTitle: "Leadership Alignment",
+          bullets: [
+            "Focused briefing with leadership, IT, and Legal",
+            "Alignment on risks and safeguards",
+            "Data and access considerations",
+            "Model selection preferences",
+            "Define what 'good AI' looks like inside your organization"
+          ]
+        },
+        {
+          groupTitle: "AI Policy + Standards",
+          bullets: [
+            "Clear, simple policy designed for your size and structure",
+            "Approved tools and use cases",
+            "Data rules and restrictions",
+            "Accuracy and verification expectations",
+            "Brand voice guidance for AI use"
+          ]
+        },
+        {
+          groupTitle: "AI Champion Training (One Seat Included)",
+          bullets: [
+            "8-week cohort training program",
+            "Weekly live workshop",
+            "Recordings, templates, and practice materials",
+            "Training in prompting, refinement, safe use, and troubleshooting",
+            "Introductory skills for workflow thinking and small automations",
+            "Internal leadership skills to support adoption across the team"
+          ]
+        },
+        {
+          groupTitle: "Use Case Identification",
+          bullets: [
+            "Department conversations to understand how work gets done",
+            "Use case identification and scoring (value + ability)",
+            "Time-saving estimates",
+            "Priority ranking of opportunities",
+            "Clear guidance on where AI belongs and where it does not"
+          ]
+        },
+        {
+          groupTitle: "Tool Audit + Recommendations",
+          bullets: [
+            "Evaluation of your current stack",
+            "Safe handling guidance for sensitive data",
+            "Platform fit analysis (HighLevel, Google Workspace, etc.)",
+            "Tools to develop, keep, optimize, or retire",
+            "Focus only on solutions that deliver measurable value"
+          ]
+        },
+        {
+          groupTitle: "Good AI Roadmap",
+          bullets: [
+            "Short-term, high-leverage roadmap",
+            "Priority use cases with recommended sequencing",
+            "Early pilots that deliver immediate value",
+            "Clear path into the Good AI Partner Program for build-out"
+          ]
+        }
+      ],
+
+      timeline: "Initial Foundations work can begin immediately. AI Champion Training begins mid-January as an 8-week cohort.",
+
+      outcome: "You'll have a fully aligned AI policy, one trained AI Champion, a clear roadmap of where to automate first, standards that guide safe and smart AI use, and high-value workflows identified and prioritized."
+    },
+
+    investmentNarrative: {
+      structure: "one_time",
+      totalPrice: 6000,
+      narrative: "**Good AI Foundations:** $6,000 one-time investment. Includes 1 Champion Seat, policy development, assessments, tools analysis, and roadmap. Additional Champion seats available at $1,750 each.",
+      valueStatement: "Foundations fast-tracks setup so you can move into intelligent automation and custom-built work quickly, without trial and error."
+    },
+
+    quoteDescription: "AI readiness package including leadership alignment, custom AI policy and standards, 8-week AI Champion training (1 seat), use case identification and prioritization, tool audit, and strategic roadmap."
+  },
+
+  good_ai_partner: {
+    serviceKey: 'good_ai_partner',
+    displayName: 'AI Partner Program',
+
+    detailedDescription: {
+      intro: "Once Foundations is complete and you have clarity on direction, we begin building the systems. The AI Partner Program covers everything required to move from idea to blueprint to working system.",
+
+      deliverableGroups: [
+        {
+          groupTitle: "Discovery & Planning",
+          bullets: [
+            "Deep-dive workflow diagrams",
+            "Blueprinting and requirements documentation",
+            "Use case selection for development",
+            "Integration planning with existing tools"
+          ]
+        },
+        {
+          groupTitle: "Custom Development",
+          bullets: [
+            "Custom GPTs tailored to your workflows",
+            "Internal tools and automations",
+            "Integration with HighLevel or preferred tools",
+            "Draft → test → refine development cycles"
+          ]
+        },
+        {
+          groupTitle: "Ongoing Support & Strategy",
+          bullets: [
+            "Weekly strategy and build meetings",
+            "Documentation and training for your AI Champion",
+            "Continuous optimization based on usage",
+            "Development path for more advanced tools"
+          ]
+        }
+      ],
+
+      timeline: "3-month minimum engagement with weekly strategy and build meetings.",
+
+      outcome: "Working automations, tools that reduce manual work, systems your AI Champion can maintain, a development path for more advanced tools, and more operational capacity with better visibility."
+    },
+
+    investmentNarrative: {
+      structure: "monthly_retainer",
+      monthlyPrice: 4000,
+      minimumMonths: 3,
+      narrative: "**AI Partner Program:** $4,000/month retainer. 3-month minimum commitment. This covers everything required to move from idea to blueprint to working system.",
+      valueStatement: "Build → Test → Deploy → Document. Custom AI tools that reduce manual work and give you more operational capacity."
+    },
+
+    quoteDescription: "Monthly AI development retainer including custom GPTs, workflow automation, integrations, weekly strategy meetings, and documentation. 3-month minimum commitment."
   }
 };
 

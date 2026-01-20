@@ -162,6 +162,44 @@ const serviceModules = [
       { label: 'Team Leadership', description: 'Marketing team guidance', price: 1500 },
       { label: 'Performance Reporting', description: 'Monthly analytics and insights', price: 500 }
     ]
+  },
+  {
+    id: 'good_start',
+    label: 'Good Start Program',
+    category: 'startup',
+    summary: 'Foundation package for new businesses: brand cleanup, website, SEO, and training',
+    billingType: 'hourly_capped',
+    lineItemDefaults: [
+      { label: 'Brand Cleanup', description: 'Logo review, colors, fonts, voice and tone', price: 1500 },
+      { label: 'Website Build', description: 'Multi-page site with contact form and gallery', price: 2000 },
+      { label: 'Technical & SEO Setup', description: 'Domain, hosting, email, basic SEO', price: 1000 },
+      { label: 'Website Training', description: 'Training to update text, photos, and images', price: 500 }
+    ]
+  },
+  {
+    id: 'good_ai_foundations',
+    label: 'Good AI Foundations',
+    category: 'ai',
+    summary: 'AI readiness package: policy, standards, champion training, use case identification, and roadmap',
+    billingType: 'one_time',
+    lineItemDefaults: [
+      { label: 'Leadership Alignment', description: 'Briefing with leadership on AI risks, safeguards, and strategy', price: 500 },
+      { label: 'AI Policy + Standards', description: 'Custom AI policy with approved tools and data rules', price: 1000 },
+      { label: 'AI Champion Training', description: '8-week cohort training (1 seat included)', price: 1750 },
+      { label: 'Use Case Identification', description: 'Department assessments and priority ranking', price: 1000 },
+      { label: 'Tool Audit + Recommendations', description: 'Stack evaluation and optimization guidance', price: 750 },
+      { label: 'Good AI Roadmap', description: 'Priority roadmap with sequencing and pilots', price: 1000 }
+    ]
+  },
+  {
+    id: 'good_ai_partner',
+    label: 'AI Partner Program',
+    category: 'ai',
+    summary: 'Custom AI development: workflow automation, custom GPTs, integrations, and ongoing support',
+    billingType: 'monthly',
+    lineItemDefaults: [
+      { label: 'AI Partner Program', description: 'Monthly retainer for custom AI development and support', price: 4000 }
+    ]
   }
 ];
 
