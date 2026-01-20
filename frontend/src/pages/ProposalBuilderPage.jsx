@@ -64,7 +64,10 @@ export default function ProposalBuilderPage() {
     { id: 'seo_hosting', label: 'SEO & Hosting', price: '$3,500' },
     { id: 'digital_upgrades', label: 'Digital Upgrades', price: '$5,000' },
     { id: '828_marketing', label: '828 Marketing (Monthly)', price: '$3,000/mo' },
-    { id: 'fractional_cmo', label: 'Fractional CMO (Monthly)', price: '$5,000/mo' }
+    { id: 'fractional_cmo', label: 'Fractional CMO', price: '$5,000/mo' },
+    { id: 'good_start', label: 'Good Start Program', price: '~$5,000' },
+    { id: 'good_ai_foundations', label: 'Good AI Foundations', price: '$6,000' },
+    { id: 'good_ai_partner', label: 'AI Partner Program', price: '$4,000/mo' },
   ];
 
   // Load existing proposal on mount
