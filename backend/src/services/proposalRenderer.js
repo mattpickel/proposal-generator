@@ -336,7 +336,6 @@ export function renderProposalToHtml(proposal) {
 </head>
 <body>
 <div style="${styles.content}">
-${renderCover(proposal.cover)}
 ${renderComments(proposal.comments)}
 ${renderServices(proposal.services)}
 ${renderModules(proposal.modules)}
@@ -476,7 +475,6 @@ export function renderProposalToPlainText(proposal) {
  */
 export function renderProposalBodyHtml(proposal) {
   return `<div style="${styles.content}">
-${renderCover(proposal.cover)}
 ${renderComments(proposal.comments)}
 ${renderServices(proposal.services)}
 ${renderModules(proposal.modules)}
