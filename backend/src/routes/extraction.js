@@ -12,16 +12,25 @@ import {
 
 const router = express.Router();
 
+// Get API key from environment (secure - never exposed to frontend)
+const getApiKey = () => {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error('OPENAI_API_KEY environment variable is not configured');
+  }
+  return apiKey;
+};
+
 // Extract client brief from transcript
 router.post('/client-brief', async (req, res, next) => {
   try {
-    const { apiKey, transcriptText } = req.body;
+    const { transcriptText } = req.body;
 
-    if (!apiKey || !transcriptText) {
-      return res.status(400).json({ error: 'Missing apiKey or transcriptText' });
+    if (!transcriptText) {
+      return res.status(400).json({ error: 'Missing transcriptText' });
     }
 
-    const brief = await extractClientBrief(apiKey, transcriptText);
+    const brief = await extractClientBrief(getApiKey(), transcriptText);
     res.json(brief);
   } catch (error) {
     next(error);
@@ -31,13 +40,13 @@ router.post('/client-brief', async (req, res, next) => {
 // Extract document summary
 router.post('/document-summary', async (req, res, next) => {
   try {
-    const { apiKey, documentText, documentType } = req.body;
+    const { documentText, documentType } = req.body;
 
-    if (!apiKey || !documentText) {
-      return res.status(400).json({ error: 'Missing apiKey or documentText' });
+    if (!documentText) {
+      return res.status(400).json({ error: 'Missing documentText' });
     }
 
-    const summary = await extractDocumentSummary(apiKey, documentText, documentType);
+    const summary = await extractDocumentSummary(getApiKey(), documentText, documentType);
     res.json(summary);
   } catch (error) {
     next(error);
@@ -47,13 +56,13 @@ router.post('/document-summary', async (req, res, next) => {
 // Suggest services based on client brief
 router.post('/suggest-services', async (req, res, next) => {
   try {
-    const { apiKey, clientBrief } = req.body;
+    const { clientBrief } = req.body;
 
-    if (!apiKey || !clientBrief) {
-      return res.status(400).json({ error: 'Missing apiKey or clientBrief' });
+    if (!clientBrief) {
+      return res.status(400).json({ error: 'Missing clientBrief' });
     }
 
-    const suggestions = await suggestServices(apiKey, clientBrief);
+    const suggestions = await suggestServices(getApiKey(), clientBrief);
     res.json(suggestions);
   } catch (error) {
     next(error);

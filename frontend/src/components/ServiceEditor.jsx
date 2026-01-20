@@ -16,8 +16,7 @@ export function ServiceEditor({
   service,
   onToggle,
   onUpdateOverrides,
-  isLoading = false,
-  apiKey = null
+  isLoading = false
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [editingSubsection, setEditingSubsection] = useState(null);
@@ -58,14 +57,13 @@ export function ServiceEditor({
   };
 
   const handleRefineWithAI = async (subsection) => {
-    if (!apiKey || !refineInstructions.trim()) return;
+    if (!refineInstructions.trim()) return;
 
     const currentContent = service.overrides?.[`subsection_${subsection.number}`] || subsection.bodyMarkdown;
 
     setIsRefining(true);
     try {
       const result = await api.proposalsV2.refineContent({
-        apiKey,
         currentContent,
         instructions: refineInstructions,
         context: `Service: ${service.displayNameCaps}, Section: ${subsection.title}`
@@ -225,15 +223,13 @@ export function ServiceEditor({
                         >
                           Edit
                         </button>
-                        {apiKey && (
-                          <button
-                            className="btn btn-sm btn-ai"
-                            onClick={() => handleRefineClick(sub)}
-                            disabled={isLoading || isRefining}
-                          >
-                            Refine with AI
-                          </button>
-                        )}
+                        <button
+                          className="btn btn-sm btn-ai"
+                          onClick={() => handleRefineClick(sub)}
+                          disabled={isLoading || isRefining}
+                        >
+                          Refine with AI
+                        </button>
                       </>
                     )}
                     {hasOverride && editingSubsection !== sub.number && refiningSubsection !== sub.number && (

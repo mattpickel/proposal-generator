@@ -14,16 +14,25 @@ import { iterateProposal } from '../services/openai.js';
 
 const router = express.Router();
 
+// Get API key from environment (secure - never exposed to frontend)
+const getApiKey = () => {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error('OPENAI_API_KEY environment variable is not configured');
+  }
+  return apiKey;
+};
+
 // Generate a single section
 router.post('/section', async (req, res, next) => {
   try {
-    const { apiKey, templateSection, clientBriefId, selectedServiceIds, proposalInstanceId } = req.body;
+    const { templateSection, clientBriefId, selectedServiceIds, proposalInstanceId } = req.body;
 
-    if (!apiKey || !templateSection || !clientBriefId || !selectedServiceIds || !proposalInstanceId) {
+    if (!templateSection || !clientBriefId || !selectedServiceIds || !proposalInstanceId) {
       return res.status(400).json({ error: 'Missing required parameters' });
     }
 
-    const section = await generateSection(apiKey, {
+    const section = await generateSection(getApiKey(), {
       templateSection,
       clientBriefId,
       selectedServiceIds,
@@ -39,15 +48,15 @@ router.post('/section', async (req, res, next) => {
 // Generate all sections (with progress callback via SSE)
 router.post('/all-sections', async (req, res, next) => {
   try {
-    const { apiKey, proposalInstanceId } = req.body;
+    const { proposalInstanceId } = req.body;
 
-    if (!apiKey || !proposalInstanceId) {
-      return res.status(400).json({ error: 'Missing apiKey or proposalInstanceId' });
+    if (!proposalInstanceId) {
+      return res.status(400).json({ error: 'Missing proposalInstanceId' });
     }
 
     // For simplicity, we'll just return all sections without SSE for now
     // In production, you'd want to implement SSE or WebSockets for progress updates
-    const sections = await generateAllSections(apiKey, proposalInstanceId);
+    const sections = await generateAllSections(getApiKey(), proposalInstanceId);
     res.json(sections);
   } catch (error) {
     next(error);
@@ -57,13 +66,13 @@ router.post('/all-sections', async (req, res, next) => {
 // Revise a section
 router.post('/revise', async (req, res, next) => {
   try {
-    const { apiKey, sectionInstanceId, comment } = req.body;
+    const { sectionInstanceId, comment } = req.body;
 
-    if (!apiKey || !sectionInstanceId || !comment) {
+    if (!sectionInstanceId || !comment) {
       return res.status(400).json({ error: 'Missing required parameters' });
     }
 
-    const revised = await reviseSection(apiKey, sectionInstanceId, comment);
+    const revised = await reviseSection(getApiKey(), sectionInstanceId, comment);
     res.json(revised);
   } catch (error) {
     next(error);
@@ -73,13 +82,13 @@ router.post('/revise', async (req, res, next) => {
 // Generate unified proposal (new single-pass approach)
 router.post('/unified', async (req, res, next) => {
   try {
-    const { apiKey, proposalInstanceId, proposalMetadata } = req.body;
+    const { proposalInstanceId, proposalMetadata } = req.body;
 
-    if (!apiKey || !proposalInstanceId) {
-      return res.status(400).json({ error: 'Missing apiKey or proposalInstanceId' });
+    if (!proposalInstanceId) {
+      return res.status(400).json({ error: 'Missing proposalInstanceId' });
     }
 
-    const result = await generateUnifiedProposal(apiKey, proposalInstanceId, proposalMetadata);
+    const result = await generateUnifiedProposal(getApiKey(), proposalInstanceId, proposalMetadata);
     res.json(result);
   } catch (error) {
     next(error);
@@ -89,13 +98,13 @@ router.post('/unified', async (req, res, next) => {
 // Iterate on existing proposal with feedback
 router.post('/iterate', async (req, res, next) => {
   try {
-    const { apiKey, currentProposal, feedback } = req.body;
+    const { currentProposal, feedback } = req.body;
 
-    if (!apiKey || !currentProposal || !feedback) {
-      return res.status(400).json({ error: 'Missing required parameters: apiKey, currentProposal, feedback' });
+    if (!currentProposal || !feedback) {
+      return res.status(400).json({ error: 'Missing required parameters: currentProposal, feedback' });
     }
 
-    const revisedProposal = await iterateProposal(apiKey, currentProposal, feedback);
+    const revisedProposal = await iterateProposal(getApiKey(), currentProposal, feedback);
     res.json({ proposal: revisedProposal });
   } catch (error) {
     next(error);

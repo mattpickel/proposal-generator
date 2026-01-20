@@ -8,7 +8,7 @@ import { useState } from 'react';
 import api from '../services/api';
 import { readFileAsText } from '../utils/fileUtils';
 
-export function useProposalBuilder(apiKey, showToast) {
+export function useProposalBuilder(showToast) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [currentProposal, setCurrentProposal] = useState(null);
   const [clientBrief, setClientBrief] = useState(null);
@@ -27,7 +27,7 @@ export function useProposalBuilder(apiKey, showToast) {
       console.log('ProposalBuilder - Transcript text length:', text.length);
       console.log('ProposalBuilder - Transcript preview:', text.substring(0, 500));
 
-      const brief = await api.extraction.extractClientBrief(apiKey, text);
+      const brief = await api.extraction.extractClientBrief(text);
       console.log('ProposalBuilder - Extracted brief:', brief);
 
       // Save to database
@@ -35,7 +35,7 @@ export function useProposalBuilder(apiKey, showToast) {
       setClientBrief(savedBrief);
 
       // Suggest services
-      const suggestions = await api.extraction.suggestServices(apiKey, savedBrief);
+      const suggestions = await api.extraction.suggestServices(savedBrief);
       setSuggestedServices(suggestions.recommendedServices || []);
 
       showToast('✅ Transcript processed!', 'success');
@@ -62,7 +62,7 @@ export function useProposalBuilder(apiKey, showToast) {
       showToast(`Processing ${file.name}...`, 'success');
 
       const text = await readFileAsText(file);
-      const summary = await api.extraction.extractDocumentSummary(apiKey, text, file.type);
+      const summary = await api.extraction.extractDocumentSummary(text, file.type);
 
       // Save to database
       const doc = await api.database.documents.create({
@@ -139,7 +139,7 @@ export function useProposalBuilder(apiKey, showToast) {
       showToast('Generating proposal...', 'success');
 
       // Use new unified generation
-      const result = await api.generation.generateUnified(apiKey, proposalInstanceId, proposalMetadata);
+      const result = await api.generation.generateUnified(proposalInstanceId, proposalMetadata);
 
       setGenerationProgress(null);
       showToast('✅ Proposal generated successfully!', 'success');
@@ -172,7 +172,7 @@ export function useProposalBuilder(apiKey, showToast) {
     try {
       showToast('Revising section...', 'success');
 
-      const revised = await api.generation.reviseSection(apiKey, sectionInstanceId, comment);
+      const revised = await api.generation.reviseSection(sectionInstanceId, comment);
 
       showToast('✅ Section revised!', 'success');
       console.log('ProposalBuilder - Section revised', {

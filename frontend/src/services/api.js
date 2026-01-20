@@ -111,59 +111,59 @@ class APIClient {
     },
   };
 
-  // Extraction operations
+  // Extraction operations (API key is handled server-side)
   extraction = {
-    extractClientBrief: (apiKey, transcriptText) =>
+    extractClientBrief: (transcriptText) =>
       this.request('/extraction/client-brief', {
         method: 'POST',
-        body: { apiKey, transcriptText },
+        body: { transcriptText },
       }),
 
-    extractDocumentSummary: (apiKey, documentText, documentType) =>
+    extractDocumentSummary: (documentText, documentType) =>
       this.request('/extraction/document-summary', {
         method: 'POST',
-        body: { apiKey, documentText, documentType },
+        body: { documentText, documentType },
       }),
 
-    suggestServices: (apiKey, clientBrief) =>
+    suggestServices: (clientBrief) =>
       this.request('/extraction/suggest-services', {
         method: 'POST',
-        body: { apiKey, clientBrief },
+        body: { clientBrief },
       }),
   };
 
-  // Generation operations
+  // Generation operations (API key is handled server-side)
   generation = {
-    generateSection: (apiKey, params) =>
+    generateSection: (params) =>
       this.request('/generation/section', {
         method: 'POST',
-        body: { apiKey, ...params },
+        body: params,
       }),
 
-    generateAllSections: (apiKey, proposalInstanceId) =>
+    generateAllSections: (proposalInstanceId) =>
       this.request('/generation/all-sections', {
         method: 'POST',
-        body: { apiKey, proposalInstanceId },
+        body: { proposalInstanceId },
       }),
 
-    reviseSection: (apiKey, sectionInstanceId, comment) =>
+    reviseSection: (sectionInstanceId, comment) =>
       this.request('/generation/revise', {
         method: 'POST',
-        body: { apiKey, sectionInstanceId, comment },
+        body: { sectionInstanceId, comment },
       }),
 
     // New unified proposal generation
-    generateUnified: (apiKey, proposalInstanceId, proposalMetadata = {}) =>
+    generateUnified: (proposalInstanceId, proposalMetadata = {}) =>
       this.request('/generation/unified', {
         method: 'POST',
-        body: { apiKey, proposalInstanceId, proposalMetadata },
+        body: { proposalInstanceId, proposalMetadata },
       }),
 
     // Iterate on existing proposal with feedback
-    iterateProposal: (apiKey, currentProposal, feedback) =>
+    iterateProposal: (currentProposal, feedback) =>
       this.request('/generation/iterate', {
         method: 'POST',
-        body: { apiKey, currentProposal, feedback },
+        body: { currentProposal, feedback },
       }),
   };
 

@@ -24,6 +24,15 @@ import { log } from '../utils/logger.js';
 
 const router = express.Router();
 
+// Get API key from environment (secure - never exposed to frontend)
+const getApiKey = () => {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error('OPENAI_API_KEY environment variable is not configured');
+  }
+  return apiKey;
+};
+
 /**
  * POST /api/proposals/v2
  * Create a new proposal (assembles skeleton + generates AI comments)
@@ -31,7 +40,6 @@ const router = express.Router();
 router.post('/v2', async (req, res, next) => {
   try {
     const {
-      apiKey,
       opportunityId,
       clientBriefId,
       selectedServiceIds,
@@ -39,9 +47,6 @@ router.post('/v2', async (req, res, next) => {
       customInstructions
     } = req.body;
 
-    if (!apiKey) {
-      return res.status(400).json({ error: 'Missing required parameter: apiKey' });
-    }
     if (!opportunityId) {
       return res.status(400).json({ error: 'Missing required parameter: opportunityId' });
     }
@@ -70,7 +75,7 @@ router.post('/v2', async (req, res, next) => {
     const clientBrief = await clientBriefs.get(clientBriefId);
     const serviceNames = getServiceDisplayNames(selectedServiceIds);
 
-    const commentsResult = await generateComments(apiKey, {
+    const commentsResult = await generateComments(getApiKey(), {
       clientBrief,
       selectedServiceNames: serviceNames,
       customInstructions
@@ -145,7 +150,7 @@ router.get('/v2/:id', async (req, res, next) => {
 router.patch('/v2/:id/comments', async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { apiKey, comments, regenerate, feedback } = req.body;
+    const { comments, regenerate, feedback } = req.body;
 
     const existing = await proposalInstances.get(id);
     if (!existing?.proposalJson) {
@@ -154,14 +159,14 @@ router.patch('/v2/:id/comments', async (req, res, next) => {
 
     let proposal = existing.proposalJson;
 
-    if (regenerate && apiKey) {
+    if (regenerate) {
       // Regenerate with AI
       const clientBrief = await clientBriefs.get(proposal.clientBriefId);
       const serviceNames = proposal.services
         .filter(s => s.enabled)
         .map(s => s.displayNameCaps);
 
-      const result = await regenerateComments(apiKey, {
+      const result = await regenerateComments(getApiKey(), {
         clientBrief,
         selectedServiceNames: serviceNames,
         currentComments: proposal.comments,
@@ -391,11 +396,11 @@ router.delete('/v2/:id', async (req, res, next) => {
  */
 router.post('/v2/refine-content', async (req, res, next) => {
   try {
-    const { apiKey, currentContent, instructions, context } = req.body;
+    const { currentContent, instructions, context } = req.body;
 
-    if (!apiKey || !currentContent || !instructions) {
+    if (!currentContent || !instructions) {
       return res.status(400).json({
-        error: 'Missing required parameters: apiKey, currentContent, instructions'
+        error: 'Missing required parameters: currentContent, instructions'
       });
     }
 
@@ -407,7 +412,7 @@ router.post('/v2/refine-content', async (req, res, next) => {
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${apiKey}`,
+        'Authorization': `Bearer ${getApiKey()}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({

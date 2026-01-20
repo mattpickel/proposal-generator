@@ -11,7 +11,7 @@
 import { useState, useCallback } from 'react';
 import api from '../services/api';
 
-export function useProposalV2(apiKey, showToast) {
+export function useProposalV2(showToast) {
   const [proposal, setProposal] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [renderedHtml, setRenderedHtml] = useState('');
@@ -29,7 +29,6 @@ export function useProposalV2(apiKey, showToast) {
     setIsLoading(true);
     try {
       const result = await api.proposalsV2.create({
-        apiKey,
         opportunityId,
         clientBriefId,
         selectedServiceIds,
@@ -58,7 +57,7 @@ export function useProposalV2(apiKey, showToast) {
     } finally {
       setIsLoading(false);
     }
-  }, [apiKey, showToast]);
+  }, [showToast]);
 
   /**
    * Load an existing proposal
@@ -110,7 +109,6 @@ export function useProposalV2(apiKey, showToast) {
       showToast('Regenerating comments...', 'info');
 
       const result = await api.proposalsV2.updateComments(id, {
-        apiKey,
         regenerate: true,
         feedback
       });
@@ -124,7 +122,7 @@ export function useProposalV2(apiKey, showToast) {
     } finally {
       setIsLoading(false);
     }
-  }, [apiKey, showToast]);
+  }, [showToast]);
 
   /**
    * Update cover block

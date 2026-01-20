@@ -28,7 +28,6 @@ export default function ProposalBuilderPage() {
   const { opportunityId } = useParams();
   const navigate = useNavigate();
   const { toast, showToast } = useToast();
-  const apiKey = import.meta.env.VITE_OPENAI_API_KEY || '';
   const [isLoading, setIsLoading] = useState(true);
 
   // Form state
@@ -52,10 +51,10 @@ export default function ProposalBuilderPage() {
   const [viewMode, setViewMode] = useState('edit');
 
   // Old builder hook (for transcript processing and client brief extraction)
-  const builder = useProposalBuilder(apiKey, showToast);
+  const builder = useProposalBuilder(showToast);
 
   // New V2 proposal hook (for JSON-first proposal management)
-  const proposalV2 = useProposalV2(apiKey, showToast);
+  const proposalV2 = useProposalV2(showToast);
 
   const googleDrive = useGoogleDrive();
 
@@ -853,7 +852,6 @@ export default function ProposalBuilderPage() {
                         onToggle={(enabled) => handleToggleService(service.serviceKey, enabled)}
                         onUpdateOverrides={(overrides) => handleUpdateServiceOverrides(service.serviceKey, overrides)}
                         isLoading={proposalV2.isLoading}
-                        apiKey={apiKey}
                       />
                     ))}
                   </div>
