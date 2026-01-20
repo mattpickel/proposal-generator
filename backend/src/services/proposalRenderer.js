@@ -340,9 +340,6 @@ ${renderCover(proposal.cover)}
 ${renderComments(proposal.comments)}
 ${renderServices(proposal.services)}
 ${renderModules(proposal.modules)}
-${renderItemized(proposal.itemized)}
-${renderTerms(proposal.terms)}
-${renderSignatures(proposal.signatures)}
 </div>
 </body>
 </html>`;
@@ -483,8 +480,5 @@ ${renderCover(proposal.cover)}
 ${renderComments(proposal.comments)}
 ${renderServices(proposal.services)}
 ${renderModules(proposal.modules)}
-${renderItemized(proposal.itemized)}
-${renderTerms(proposal.terms)}
-${renderSignatures(proposal.signatures)}
 </div>`.trim();
 }
