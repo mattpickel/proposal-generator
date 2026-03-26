@@ -20,15 +20,16 @@ import { renderProposalToHtml, renderProposalToPlainText, renderProposalBodyHtml
 import { lintProposal, validateProposal } from '../services/proposalLinter.js';
 import { proposalInstances, clientBriefs } from '../services/database.js';
 import { getServiceFromLibrary, getServiceDisplayNames } from '../data/serviceLibrary.js';
+import { callAnthropic, MODELS } from '../services/anthropic.js';
 import { log } from '../utils/logger.js';
 
 const router = express.Router();
 
 // Get API key from environment (secure - never exposed to frontend)
 const getApiKey = () => {
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    throw new Error('OPENAI_API_KEY environment variable is not configured');
+    throw new Error('ANTHROPIC_API_KEY environment variable is not configured');
   }
   return apiKey;
 };
@@ -409,49 +410,31 @@ router.post('/v2/refine-content', async (req, res, next) => {
       instructionsLength: instructions.length
     });
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${getApiKey()}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        messages: [
-          {
-            role: 'system',
-            content: `You are helping refine marketing proposal content. Your task is to modify the given content based on the user's instructions while maintaining professional quality and the existing structure/format.
+    const systemPrompt = `You are helping refine marketing proposal content. Your task is to modify the given content based on the user's instructions while maintaining professional quality and the existing structure/format.
 
 Rules:
 - Keep the same general format (markdown, bullet points, etc.) unless asked to change it
 - Preserve any key information unless specifically asked to remove it
 - Make targeted changes based on the instructions
 - Output ONLY the refined content, no explanations or commentary
-${context ? `\nContext: ${context}` : ''}`
-          },
-          {
-            role: 'user',
-            content: `CURRENT CONTENT:
+${context ? `\nContext: ${context}` : ''}`;
+
+    const userPrompt = `CURRENT CONTENT:
 ${currentContent}
 
 INSTRUCTIONS FOR REFINEMENT:
 ${instructions}
 
-Please provide the refined content:`
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 2000
-      })
+Please provide the refined content:`;
+
+    const { text: refinedContent, inputTokens, outputTokens } = await callAnthropic(getApiKey(), {
+      system: systemPrompt,
+      messages: [{ role: 'user', content: userPrompt }],
+      model: MODELS.fast,
+      maxTokens: 2000,
+      temperature: 0.7,
+      operationType: 'refine-content'
     });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error?.message || 'OpenAI API error');
-    }
-
-    const data = await response.json();
-    const refinedContent = data.choices[0]?.message?.content?.trim();
 
     if (!refinedContent) {
       throw new Error('No content returned from AI');
@@ -460,7 +443,7 @@ Please provide the refined content:`
     log.info('ProposalsRoute', 'Content refined', {
       originalLength: currentContent.length,
       refinedLength: refinedContent.length,
-      tokens: data.usage?.total_tokens
+      tokens: inputTokens + outputTokens
     });
 
     res.json({

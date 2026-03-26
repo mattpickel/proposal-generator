@@ -149,7 +149,13 @@ export default function ProposalBuilderPage() {
             setSelectedServices(existing.serviceIds || []);
             showToast('Legacy proposal loaded - generate again to convert to V2', 'info');
           } else {
-            showToast(`Ready to create proposal for ${opportunityId}`, 'success');
+            // Try to restore transcript analysis from session (survives HMR)
+            const restored = await builder.restoreBriefFromSession(opportunityId);
+            if (restored) {
+              showToast('Transcript analysis restored', 'success');
+            } else {
+              showToast(`Ready to create proposal for ${opportunityId}`, 'success');
+            }
           }
         }
       } catch (error) {
@@ -192,7 +198,11 @@ export default function ProposalBuilderPage() {
 
     setIsAnalyzingTranscript(true);
     try {
-      await builder.processTranscript(transcriptFile);
+      const brief = await builder.processTranscript(transcriptFile);
+      // Persist across HMR reloads
+      if (brief?.id) {
+        builder.saveBriefToSession(opportunityId, brief.id, brief._suggestedServices || []);
+      }
     } catch (error) {
       console.error('Failed to process transcript:', error);
     } finally {
@@ -578,7 +588,7 @@ export default function ProposalBuilderPage() {
               <div className="upload-area">
                 <input
                   type="file"
-                  accept=".txt,.docx"
+                  accept=".txt,.docx,.md"
                   onChange={handleTranscriptUpload}
                   id="transcript-upload"
                   style={{ display: 'none' }}

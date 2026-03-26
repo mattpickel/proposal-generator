@@ -16,9 +16,9 @@ const router = express.Router();
 
 // Get API key from environment (secure - never exposed to frontend)
 const getApiKey = () => {
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    throw new Error('OPENAI_API_KEY environment variable is not configured');
+    throw new Error('ANTHROPIC_API_KEY environment variable is not configured');
   }
   return apiKey;
 };

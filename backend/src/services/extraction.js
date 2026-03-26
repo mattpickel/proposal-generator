@@ -5,9 +5,8 @@
  */
 
 import { buildClientBriefPrompt, buildDocumentSummaryPrompt, buildServiceSuggestionPrompt } from '../config/extractionPrompts.js';
+import { callAnthropic, MODELS, parseJSONResponse } from './anthropic.js';
 import { log } from '../utils/logger.js';
-
-const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
 
 /**
  * Extract ClientBrief from Fireflies transcript
@@ -20,31 +19,15 @@ export async function extractClientBrief(apiKey, transcriptText) {
   try {
     const prompt = buildClientBriefPrompt(transcriptText);
 
-    const response = await fetch(OPENAI_API_URL, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        max_tokens: 2000,
-        temperature: 0.2,
-        response_format: { type: 'json_object' },
-        messages: [{
-          role: 'user',
-          content: prompt
-        }]
-      })
+    const { text } = await callAnthropic(apiKey, {
+      messages: [{ role: 'user', content: prompt }],
+      model: MODELS.fast,
+      maxTokens: 2000,
+      temperature: 0.2,
+      operationType: 'extract-client-brief'
     });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error?.message || 'API request failed');
-    }
-
-    const data = await response.json();
-    const result = JSON.parse(data.choices[0].message.content);
+    const result = parseJSONResponse(text);
 
     log.info('Extraction', 'ClientBrief extracted successfully', {
       clientName: result.clientName,
@@ -74,31 +57,15 @@ export async function extractDocumentSummary(apiKey, documentText, documentType 
   try {
     const prompt = buildDocumentSummaryPrompt(documentText, documentType);
 
-    const response = await fetch(OPENAI_API_URL, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        max_tokens: 1000,
-        temperature: 0.2,
-        response_format: { type: 'json_object' },
-        messages: [{
-          role: 'user',
-          content: prompt
-        }]
-      })
+    const { text } = await callAnthropic(apiKey, {
+      messages: [{ role: 'user', content: prompt }],
+      model: MODELS.fast,
+      maxTokens: 1000,
+      temperature: 0.2,
+      operationType: 'extract-document-summary'
     });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error?.message || 'API request failed');
-    }
-
-    const data = await response.json();
-    const result = JSON.parse(data.choices[0].message.content);
+    const result = parseJSONResponse(text);
 
     log.info('Extraction', 'Document summary extracted', {
       keyPointsCount: result.keyPoints?.length,
@@ -125,31 +92,15 @@ export async function suggestServices(apiKey, clientBrief) {
   try {
     const prompt = buildServiceSuggestionPrompt(clientBrief);
 
-    const response = await fetch(OPENAI_API_URL, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'gpt-4o-mini',
-        max_tokens: 1000,
-        temperature: 0.3,
-        response_format: { type: 'json_object' },
-        messages: [{
-          role: 'user',
-          content: prompt
-        }]
-      })
+    const { text } = await callAnthropic(apiKey, {
+      messages: [{ role: 'user', content: prompt }],
+      model: MODELS.fast,
+      maxTokens: 1000,
+      temperature: 0.3,
+      operationType: 'suggest-services'
     });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error?.message || 'API request failed');
-    }
-
-    const data = await response.json();
-    const result = JSON.parse(data.choices[0].message.content);
+    const result = parseJSONResponse(text);
 
     log.info('Extraction', 'Services suggested', {
       recommended: result.recommendedServices,

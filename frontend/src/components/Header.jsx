@@ -18,8 +18,8 @@ export function Header() {
         </Link>
         <nav className="header-nav">
           <Link
-            to="/"
-            className={`header-nav-link ${location.pathname === '/' || location.pathname.startsWith('/proposal') ? 'header-nav-link--active' : ''}`}
+            to="/proposals"
+            className={`header-nav-link ${location.pathname === '/proposals' || location.pathname.startsWith('/proposal/') ? 'header-nav-link--active' : ''}`}
           >
             Proposals
           </Link>

@@ -6,6 +6,7 @@
 
 import { buildSectionContext, buildGenerateSectionPrompt, buildReviseSectionPrompt } from '../config/sectionPrompts.js';
 import { SYSTEM_PROMPT, buildUserPrompt, formatServicesForPrompt } from '../config/unifiedProposalPrompt.js';
+import { callAnthropic, MODELS, parseJSONResponse } from './anthropic.js';
 import { log } from '../utils/logger.js';
 import {
   proposalTemplates,
@@ -18,19 +19,13 @@ import {
   proposalInstances
 } from './database.js';
 
-const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
-
 /**
  * Collect exemplars for a section
  */
 async function collectExemplars(sectionId, selectedServiceIds) {
   try {
-    // Get all exemplars for this section
     const sectionExemplarsData = await sectionExemplars.getBySectionId(sectionId);
 
-    // Filter to include:
-    // 1. Exemplars with no serviceId (global)
-    // 2. Exemplars matching selected services
     const relevant = sectionExemplarsData.filter(ex =>
       !ex.serviceId || selectedServiceIds.includes(ex.serviceId)
     );
@@ -62,7 +57,6 @@ export async function generateSection(apiKey, {
   });
 
   try {
-    // Load required data
     const [clientBrief, template, styleCard, services] = await Promise.all([
       clientBriefs.get(clientBriefId),
       proposalTemplates.getDefault(),
@@ -70,10 +64,8 @@ export async function generateSection(apiKey, {
       serviceModules.getByIds(selectedServiceIds)
     ]);
 
-    // Collect exemplars
     const exemplars = await collectExemplars(templateSection.id, selectedServiceIds);
 
-    // Build context
     const sectionContext = buildSectionContext(
       templateSection,
       clientBrief,
@@ -82,7 +74,6 @@ export async function generateSection(apiKey, {
       exemplars
     );
 
-    // Build prompt
     const prompt = buildGenerateSectionPrompt(sectionContext);
 
     log.debug('ProposalGen', `Calling AI for section ${templateSection.id}`, {
@@ -90,42 +81,23 @@ export async function generateSection(apiKey, {
       exemplarsCount: exemplars.length
     });
 
-    // Call OpenAI
-    const response = await fetch(OPENAI_API_URL, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'gpt-4-turbo-preview',
-        max_tokens: 2000,
-        temperature: 0.3,
-        messages: [{
-          role: 'user',
-          content: prompt
-        }]
-      })
+    const { text, inputTokens, outputTokens } = await callAnthropic(apiKey, {
+      messages: [{ role: 'user', content: prompt }],
+      model: MODELS.standard,
+      maxTokens: 2000,
+      temperature: 0.3,
+      operationType: `generate-section-${templateSection.id}`
     });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error?.message || 'API request failed');
-    }
-
-    const data = await response.json();
-    const content = data.choices[0].message.content;
 
     log.info('ProposalGen', `Section generated: ${templateSection.title}`, {
-      contentLength: content.length,
-      tokens: data.usage?.total_tokens
+      contentLength: text.length,
+      tokens: inputTokens + outputTokens
     });
 
-    // Save to database
     const sectionInstance = await proposalSections.create({
       proposalInstanceId,
       sectionId: templateSection.id,
-      content,
+      content: text,
       version: 1
     });
 
@@ -145,24 +117,20 @@ export async function generateAllSections(apiKey, proposalInstanceId, onProgress
   log.info('ProposalGen', 'Starting full proposal generation', { proposalInstanceId });
 
   try {
-    // Get proposal instance
     const proposal = await proposalInstances.get(proposalInstanceId);
 
     if (!proposal) {
       throw new Error('Proposal instance not found');
     }
 
-    // Get template
     const template = await proposalTemplates.get(proposal.templateId);
 
     const results = [];
     const totalSections = template.sections.length;
 
-    // Generate each section
     for (let i = 0; i < template.sections.length; i++) {
       const section = template.sections[i];
 
-      // Notify progress
       if (onProgress) {
         onProgress({
           current: i + 1,
@@ -186,7 +154,6 @@ export async function generateAllSections(apiKey, proposalInstanceId, onProgress
       sectionsCount: results.length
     });
 
-    // Update proposal status
     await proposalInstances.update(proposalInstanceId, {
       status: 'generated'
     });
@@ -208,19 +175,16 @@ export async function reviseSection(apiKey, sectionInstanceId, userComment) {
   log.info('ProposalGen', 'Revising section', { sectionInstanceId });
 
   try {
-    // Get current section
     const currentSection = await proposalSections.get(sectionInstanceId);
 
     if (!currentSection) {
       throw new Error('Section not found');
     }
 
-    // Get proposal and client brief
     const proposal = await proposalInstances.get(currentSection.proposalInstanceId);
     const clientBrief = await clientBriefs.get(proposal.clientBriefId);
     const styleCard = await styleCards.getDefault();
 
-    // Build revision prompt
     const prompt = buildReviseSectionPrompt(
       currentSection.content,
       clientBrief.clientName,
@@ -233,43 +197,24 @@ export async function reviseSection(apiKey, sectionInstanceId, userComment) {
       currentVersion: currentSection.version
     });
 
-    // Call OpenAI
-    const response = await fetch(OPENAI_API_URL, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'gpt-4-turbo-preview',
-        max_tokens: 2000,
-        temperature: 0.3,
-        messages: [{
-          role: 'user',
-          content: prompt
-        }]
-      })
+    const { text, inputTokens, outputTokens } = await callAnthropic(apiKey, {
+      messages: [{ role: 'user', content: prompt }],
+      model: MODELS.standard,
+      maxTokens: 2000,
+      temperature: 0.3,
+      operationType: `revise-section-${currentSection.sectionId}`
     });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error?.message || 'API request failed');
-    }
-
-    const data = await response.json();
-    const revisedContent = data.choices[0].message.content;
 
     log.info('ProposalGen', 'Section revised', {
       sectionId: currentSection.sectionId,
       newVersion: currentSection.version + 1,
-      tokens: data.usage?.total_tokens
+      tokens: inputTokens + outputTokens
     });
 
-    // Create new version
     const newSection = await proposalSections.create({
       proposalInstanceId: currentSection.proposalInstanceId,
       sectionId: currentSection.sectionId,
-      content: revisedContent,
+      content: text,
       version: currentSection.version + 1,
       comment: userComment
     });
@@ -286,21 +231,17 @@ export async function reviseSection(apiKey, sectionInstanceId, userComment) {
 
 /**
  * Generate a unified proposal using the new single-pass approach
- * This replaces the section-by-section generation with one AI call
- * that produces the entire proposal body + service line descriptions
  */
 export async function generateUnifiedProposal(apiKey, proposalInstanceId, proposalMetadata = {}) {
   log.info('ProposalGen', 'Starting unified proposal generation', { proposalInstanceId });
 
   try {
-    // Get proposal instance
     const proposal = await proposalInstances.get(proposalInstanceId);
 
     if (!proposal) {
       throw new Error('Proposal instance not found');
     }
 
-    // Load client brief and services
     const [clientBrief, services] = await Promise.all([
       clientBriefs.get(proposal.clientBriefId),
       serviceModules.getByIds(proposal.serviceIds)
@@ -315,10 +256,8 @@ export async function generateUnifiedProposal(apiKey, proposalInstanceId, propos
       servicesCount: services.length
     });
 
-    // Format services for the prompt
     const formattedServices = formatServicesForPrompt(services, clientBrief);
 
-    // Build the user prompt
     const userPrompt = buildUserPrompt({
       clientBrief,
       selectedServices: formattedServices,
@@ -331,46 +270,22 @@ export async function generateUnifiedProposal(apiKey, proposalInstanceId, propos
       servicesCount: formattedServices.length
     });
 
-    // Call OpenAI with system + user prompts
-    const response = await fetch(OPENAI_API_URL, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'gpt-4-turbo-preview',
-        max_tokens: 4000,
-        temperature: 0.3,
-        response_format: { type: 'json_object' },
-        messages: [
-          {
-            role: 'system',
-            content: SYSTEM_PROMPT
-          },
-          {
-            role: 'user',
-            content: userPrompt
-          }
-        ]
-      })
+    const { text, inputTokens, outputTokens } = await callAnthropic(apiKey, {
+      system: SYSTEM_PROMPT,
+      messages: [{ role: 'user', content: userPrompt }],
+      model: MODELS.standard,
+      maxTokens: 4000,
+      temperature: 0.3,
+      operationType: 'generate-unified-proposal'
     });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error?.message || 'API request failed');
-    }
-
-    const data = await response.json();
-    const content = data.choices[0].message.content;
 
     // Parse JSON response
     let proposalData;
     try {
-      proposalData = JSON.parse(content);
+      proposalData = parseJSONResponse(text);
     } catch (parseError) {
       log.error('ProposalGen', 'Failed to parse AI response as JSON', {
-        content: content.substring(0, 500),
+        content: text.substring(0, 500),
         error: parseError.message
       });
       throw new Error('AI returned invalid JSON');
@@ -382,13 +297,14 @@ export async function generateUnifiedProposal(apiKey, proposalInstanceId, propos
       throw new Error('AI response missing proposal_body_markdown');
     }
 
+    const totalTokens = inputTokens + outputTokens;
+
     log.info('ProposalGen', 'Unified proposal generated successfully', {
       proposalBodyLength: proposal_body_markdown.length,
       servicesCount: serviceDescriptions?.length || 0,
-      tokens: data.usage?.total_tokens
+      tokens: totalTokens
     });
 
-    // Store the proposal body as a single section
     const sectionInstance = await proposalSections.create({
       proposalInstanceId,
       sectionId: 'unified_proposal',
@@ -400,7 +316,6 @@ export async function generateUnifiedProposal(apiKey, proposalInstanceId, propos
       }
     });
 
-    // Update proposal status and store service descriptions
     await proposalInstances.update(proposalInstanceId, {
       status: 'generated',
       serviceDescriptions: serviceDescriptions || []
@@ -410,7 +325,7 @@ export async function generateUnifiedProposal(apiKey, proposalInstanceId, propos
       proposalBody: proposal_body_markdown,
       serviceDescriptions: serviceDescriptions || [],
       sectionInstance,
-      tokens: data.usage?.total_tokens
+      tokens: totalTokens
     };
   } catch (error) {
     log.error('ProposalGen', 'Failed to generate unified proposal', {

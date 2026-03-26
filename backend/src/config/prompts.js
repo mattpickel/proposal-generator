@@ -213,21 +213,18 @@ Output ONLY the updated proposal. No preamble or postamble.
 export const modelConfig = {
   // Fast, cost-effective model for distillation
   distillation: {
-    model: 'gpt-4o-mini',
     maxTokens: 800,
     temperature: 0.3
   },
 
   // High-quality model for proposal generation
   generation: {
-    model: 'gpt-4-turbo-preview',
     maxTokens: 4000,
     temperature: 0.3
   },
 
   // High-quality model for iteration
   iteration: {
-    model: 'gpt-4-turbo-preview',
     maxTokens: 4000,
     temperature: 0.3
   }

@@ -15,6 +15,29 @@ export function useProposalBuilder(showToast) {
   const [suggestedServices, setSuggestedServices] = useState([]);
   const [generationProgress, setGenerationProgress] = useState(null);
 
+  // Persist/restore brief ID across HMR reloads
+  const saveBriefToSession = (opportunityId, briefId, services) => {
+    if (!opportunityId) return;
+    sessionStorage.setItem(`brief_${opportunityId}`, JSON.stringify({ briefId, services }));
+  };
+
+  const restoreBriefFromSession = async (opportunityId) => {
+    const stored = sessionStorage.getItem(`brief_${opportunityId}`);
+    if (!stored) return false;
+    try {
+      const { briefId, services } = JSON.parse(stored);
+      const brief = await api.database.clientBriefs.get(briefId);
+      if (brief) {
+        setClientBrief(brief);
+        if (services) setSuggestedServices(services);
+        return true;
+      }
+    } catch (e) {
+      console.warn('Failed to restore brief from session', e);
+    }
+    return false;
+  };
+
   /**
    * Process Fireflies transcript into ClientBrief
    */
@@ -36,14 +59,17 @@ export function useProposalBuilder(showToast) {
 
       // Suggest services
       const suggestions = await api.extraction.suggestServices(savedBrief);
-      setSuggestedServices(suggestions.recommendedServices || []);
+      const recommended = suggestions.recommendedServices || [];
+      setSuggestedServices(recommended);
 
       showToast('✅ Transcript processed!', 'success');
       console.log('ProposalBuilder - Transcript processed', {
         briefId: savedBrief.id,
-        suggestedServices: suggestions.recommendedServices
+        suggestedServices: recommended
       });
 
+      // Attach suggestions to returned brief for session persistence
+      savedBrief._suggestedServices = recommended;
       return savedBrief;
     } catch (error) {
       showToast(`❌ Failed to process transcript: ${error.message}`, 'error');
@@ -241,6 +267,8 @@ export function useProposalBuilder(showToast) {
     createProposal,
     generateProposal,
     reviseProposalSection,
-    loadProposal
+    loadProposal,
+    saveBriefToSession,
+    restoreBriefFromSession
   };
 }

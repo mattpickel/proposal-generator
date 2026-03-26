@@ -11,8 +11,7 @@
 
 import { log } from '../utils/logger.js';
 import { lintComments } from './proposalLinter.js';
-
-const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
+import { callAnthropic, MODELS, parseJSONResponse } from './anthropic.js';
 
 /**
  * System prompt for comments generation
@@ -53,11 +52,6 @@ RULES:
 
 /**
  * Build user prompt for comments generation
- * @param {Object} params - Prompt parameters
- * @param {Object} params.clientBrief - Client brief data
- * @param {string[]} params.selectedServiceNames - Display names of selected services
- * @param {string} [params.customInstructions] - Optional custom instructions
- * @returns {string} Formatted user prompt
  */
 function buildUserPrompt({ clientBrief, selectedServiceNames, customInstructions }) {
   const clientName = clientBrief.contactName || clientBrief.clientName || 'the client';
@@ -99,12 +93,6 @@ Remember: Return ONLY valid JSON. No markdown code fences, no backticks.`;
 
 /**
  * Generate comments using AI
- * @param {string} apiKey - OpenAI API key
- * @param {Object} params - Generation parameters
- * @param {Object} params.clientBrief - Client brief data
- * @param {string[]} params.selectedServiceNames - Display names of selected services
- * @param {string} [params.customInstructions] - Optional custom instructions
- * @returns {Promise<{proposalTitle: string|null, comments: import('../models/proposalSchema.js').CommentsBlock, tokens: number}>}
  */
 export async function generateComments(apiKey, {
   clientBrief,
@@ -124,39 +112,22 @@ export async function generateComments(apiKey, {
   });
 
   try {
-    const response = await fetch(OPENAI_API_URL, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model: 'gpt-4-turbo-preview',
-        max_tokens: 1000,
-        temperature: 0.4,
-        response_format: { type: 'json_object' },
-        messages: [
-          { role: 'system', content: SYSTEM_PROMPT },
-          { role: 'user', content: userPrompt }
-        ]
-      })
+    const { text, inputTokens, outputTokens } = await callAnthropic(apiKey, {
+      system: SYSTEM_PROMPT,
+      messages: [{ role: 'user', content: userPrompt }],
+      model: MODELS.standard,
+      maxTokens: 1000,
+      temperature: 0.4,
+      operationType: 'generate-comments'
     });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.error?.message || 'API request failed');
-    }
-
-    const data = await response.json();
-    const content = data.choices[0].message.content;
 
     // Parse JSON response
     let result;
     try {
-      result = JSON.parse(content);
+      result = parseJSONResponse(text);
     } catch (parseError) {
       log.error('CommentsGen', 'Failed to parse AI response', {
-        content: content.substring(0, 500),
+        content: text.substring(0, 500),
         error: parseError.message
       });
       throw new Error('AI returned invalid JSON');
@@ -169,16 +140,17 @@ export async function generateComments(apiKey, {
 
     // Apply linting/validation
     const lintedComments = lintComments(result.comments);
+    const totalTokens = inputTokens + outputTokens;
 
     log.info('CommentsGen', 'Comments generated successfully', {
       paragraphCount: lintedComments.paragraphs.length,
-      tokens: data.usage?.total_tokens
+      tokens: totalTokens
     });
 
     return {
       proposalTitle: result.proposalTitle || null,
       comments: lintedComments,
-      tokens: data.usage?.total_tokens || 0
+      tokens: totalTokens
     };
   } catch (error) {
     log.error('CommentsGen', 'Failed to generate comments', {
@@ -190,13 +162,6 @@ export async function generateComments(apiKey, {
 
 /**
  * Regenerate comments with additional feedback
- * @param {string} apiKey - OpenAI API key
- * @param {Object} params - Generation parameters
- * @param {Object} params.clientBrief - Client brief data
- * @param {string[]} params.selectedServiceNames - Display names of selected services
- * @param {import('../models/proposalSchema.js').CommentsBlock} params.currentComments - Current comments to improve
- * @param {string} params.feedback - User feedback for improvement
- * @returns {Promise<{proposalTitle: string|null, comments: import('../models/proposalSchema.js').CommentsBlock, tokens: number}>}
  */
 export async function regenerateComments(apiKey, {
   clientBrief,

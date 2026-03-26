@@ -19,7 +19,7 @@ export const GOOGLE_CONFIG = {
 // File upload configuration
 export const FILE_CONFIG = {
   ACCEPTED_TYPES: '.txt,.pdf,.docx,.md',
-  FIREFLIES_TYPES: '.txt,.pdf,.docx'
+  FIREFLIES_TYPES: '.txt,.pdf,.docx,.md'
 };
 
 // Toast notification duration
