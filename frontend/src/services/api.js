@@ -242,6 +242,16 @@ class APIClient {
       }),
   };
 
+  // Service Library management
+  serviceLibrary = {
+    getAll: () => this.request('/service-library'),
+    get: (id) => this.request(`/service-library/${id}`),
+    create: (data) => this.request('/service-library', { method: 'POST', body: data }),
+    update: (id, data) => this.request(`/service-library/${id}`, { method: 'PUT', body: data }),
+    delete: (id) => this.request(`/service-library/${id}`, { method: 'DELETE' }),
+    importDefaults: () => this.request('/service-library/import-defaults', { method: 'POST' }),
+  };
+
   // GoHighLevel integration
   ghl = {
     // Get opportunity with contact data

@@ -4,7 +4,6 @@
 
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-
 export default function HomePage() {
   const [opportunityId, setOpportunityId] = useState('');
   const navigate = useNavigate();
@@ -42,6 +41,7 @@ export default function HomePage() {
         <div className="home-info">
           <p>Enter an opportunity ID to create a new proposal or continue working on an existing one.</p>
         </div>
+
       </div>
     </div>
   );

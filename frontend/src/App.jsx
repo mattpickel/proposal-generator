@@ -5,6 +5,7 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import ProposalBuilderPage from './pages/ProposalBuilderPage';
+import ServiceTemplateEditorPage from './pages/ServiceTemplateEditorPage';
 import './App.css';
 
 function App() {
@@ -12,6 +13,7 @@ function App() {
     <Routes>
       <Route path="/" element={<HomePage />} />
       <Route path="/proposal/:opportunityId" element={<ProposalBuilderPage />} />
+      <Route path="/admin/services" element={<ServiceTemplateEditorPage />} />
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
